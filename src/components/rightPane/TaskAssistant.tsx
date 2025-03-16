@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, Mic } from "lucide-react";
+import { Send, Bot, Mic, MicOff } from "lucide-react";
 import { useTaskContext } from "@/context/TaskContext";
 import { toast } from "sonner";
 
@@ -62,14 +62,14 @@ const TaskAssistant = () => {
       const inputText = userMessage.content;
       const words = inputText.split(' ');
       
-      // Extract key parts for title (first 3-5 significant words)
+      // Extract keywords for title (first 3-5 significant words)
       const titleWords = words.filter(word => word.length > 3).slice(0, 4);
       const title = titleWords.length > 0 
         ? titleWords.join(' ').charAt(0).toUpperCase() + titleWords.join(' ').slice(1)
         : inputText.length > 30 ? `${inputText.substring(0, 30)}...` : inputText;
       
       // Generate description
-      const description = `Task generated from your input: "${inputText}". You can edit this description to add more details.`;
+      const description = `Task based on: "${inputText}". ${generateContextBasedDescription(inputText)}`;
       
       // Generate timeSlot in 24-hour format
       const now = new Date();
@@ -77,12 +77,16 @@ const TaskAssistant = () => {
       const nextHour = (hour + 1) % 24;
       const timeSlot = `${hour.toString().padStart(2, '0')}:00-${nextHour.toString().padStart(2, '0')}:00`;
       
+      // Determine likely tag and priority based on input
+      const tag = determineTag(inputText);
+      const priority = determinePriority(inputText);
+      
       // Mock task summary - in a real app, this would come from the LLM
       const summary: TaskSummary = {
         title: title,
         description: description,
-        priority: "medium",
-        tags: ["work"],
+        priority: priority,
+        tags: [tag],
         timeSlot: timeSlot,
         duration: "1 hr",
         deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -91,6 +95,53 @@ const TaskAssistant = () => {
       setTaskSummary(summary);
       setMessages(prev => [...prev, assistantMessage]);
     }, 1000);
+  };
+
+  // Helper function to generate a more contextual description
+  const generateContextBasedDescription = (text: string): string => {
+    if (text.toLowerCase().includes("meeting")) {
+      return "Prepare all necessary documents and talking points. Make sure to review the agenda beforehand.";
+    } else if (text.toLowerCase().includes("report") || text.toLowerCase().includes("write")) {
+      return "Gather all relevant data and information. Set aside uninterrupted time for writing and editing.";
+    } else if (text.toLowerCase().includes("call") || text.toLowerCase().includes("phone")) {
+      return "Prepare key discussion points. Have any reference materials ready before the call.";
+    } else if (text.toLowerCase().includes("research")) {
+      return "Define the scope and key questions. Identify main sources of information needed.";
+    } else {
+      return "Break this task into smaller steps. Consider what resources you might need to complete it efficiently.";
+    }
+  };
+
+  // Helper function to determine tag based on input
+  const determineTag = (text: string): string => {
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes("work") || lowerText.includes("meeting") || lowerText.includes("client") || lowerText.includes("project")) {
+      return "work";
+    } else if (lowerText.includes("gym") || lowerText.includes("exercise") || lowerText.includes("workout") || lowerText.includes("run")) {
+      return "health";
+    } else if (lowerText.includes("study") || lowerText.includes("read") || lowerText.includes("learn") || lowerText.includes("course")) {
+      return "education";
+    } else if (lowerText.includes("friend") || lowerText.includes("family") || lowerText.includes("party")) {
+      return "social";
+    } else if (lowerText.includes("buy") || lowerText.includes("shop") || lowerText.includes("pay") || lowerText.includes("bill")) {
+      return "finance";
+    } else if (lowerText.includes("clean") || lowerText.includes("fix") || lowerText.includes("repair") || lowerText.includes("house")) {
+      return "home";
+    } else {
+      return "personal";
+    }
+  };
+
+  // Helper function to determine priority based on input
+  const determinePriority = (text: string): string => {
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes("urgent") || lowerText.includes("asap") || lowerText.includes("critical") || lowerText.includes("important")) {
+      return "high";
+    } else if (lowerText.includes("soon") || lowerText.includes("next week") || lowerText.includes("tomorrow")) {
+      return "medium";
+    } else {
+      return "medium"; // Default to medium
+    }
   };
 
   const handleCreateTask = () => {
@@ -132,31 +183,46 @@ const TaskAssistant = () => {
     }
 
     setIsRecording(true);
-    
-    // In a real implementation, this would use the Web Speech API
-    // For now, we'll simulate a voice input after a brief delay
-    setTimeout(() => {
+
+    try {
+      // Properly implement Web Speech API for modern browsers
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsRecording(false);
+        toast.success("Voice input captured");
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsRecording(false);
+        toast.error(`Error capturing voice: ${event.error}`);
+      };
+      
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+      
+      recognition.start();
+    } catch (error) {
+      console.error('Speech recognition error:', error);
       setIsRecording(false);
-      setInput("Sample voice input for creating a task");
-      toast.success("Voice input captured");
-    }, 2000);
-    
-    // Real implementation would look like:
-    /*
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(transcript);
-      setIsRecording(false);
-    };
-    recognition.onerror = () => {
-      setIsRecording(false);
-      toast.error("Error capturing voice");
-    };
-    recognition.start();
-    */
+      toast.error("Error initializing voice input");
+      
+      // Fallback for testing
+      setTimeout(() => {
+        setInput("Sample voice input for creating a task");
+        setIsRecording(false);
+        toast.success("Voice input simulated (fallback mode)");
+      }, 2000);
+    }
   };
 
   return (
@@ -175,7 +241,7 @@ const TaskAssistant = () => {
             }`}
           >
             <div
-              className={`max-w-[80%] rounded-lg px-3 py-2 ${
+              className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                 message.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted"
@@ -187,17 +253,17 @@ const TaskAssistant = () => {
         ))}
 
         {taskSummary && (
-          <div className="bg-muted rounded-lg p-3 border">
-            <h4 className="font-medium text-sm mb-2">Task Summary:</h4>
-            <table className="w-full text-sm">
+          <div className="bg-muted rounded-lg p-3 border text-xs">
+            <h4 className="font-medium mb-2">Task Summary:</h4>
+            <table className="w-full">
               <tbody>
                 <tr>
                   <td className="font-medium pr-2">Title:</td>
                   <td>{taskSummary.title}</td>
                 </tr>
                 <tr>
-                  <td className="font-medium pr-2">Description:</td>
-                  <td className="text-xs">{taskSummary.description}</td>
+                  <td className="font-medium pr-2 align-top">Description:</td>
+                  <td>{taskSummary.description}</td>
                 </tr>
                 <tr>
                   <td className="font-medium pr-2">Priority:</td>
@@ -209,7 +275,7 @@ const TaskAssistant = () => {
                 </tr>
                 {taskSummary.timeSlot && (
                   <tr>
-                    <td className="font-medium pr-2">Time Slot:</td>
+                    <td className="font-medium pr-2">Time:</td>
                     <td>{taskSummary.timeSlot}</td>
                   </tr>
                 )}
@@ -243,7 +309,7 @@ const TaskAssistant = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Describe your task..."
-          className="min-h-16 resize-none text-sm"
+          className="min-h-12 max-h-16 resize-none text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -256,10 +322,10 @@ const TaskAssistant = () => {
             size="icon" 
             onClick={handleVoiceInput} 
             disabled={isRecording} 
-            className="h-8 w-8"
-            variant="outline"
+            className={`h-8 w-8 ${isRecording ? "bg-red-500 hover:bg-red-600" : ""}`}
+            variant={isRecording ? "default" : "outline"}
           >
-            <Mic className="h-4 w-4" color={isRecording ? "red" : undefined} />
+            {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             <span className="sr-only">Voice input</span>
           </Button>
           <Button size="icon" onClick={handleSend} disabled={!input.trim()} className="h-8 w-8">

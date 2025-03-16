@@ -35,7 +35,8 @@ const RightPane = ({ className }: RightPaneProps) => {
         {isOpen ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
       </Button>
 
-      <div className={cn("h-full overflow-hidden", isOpen ? "opacity-100" : "opacity-0")}>
+      {/* Always render the content, but control visibility with classes */}
+      <div className={cn("h-full", isOpen ? "opacity-100 visible" : "opacity-0 invisible")}>
         <div className="h-[65%] border-b overflow-hidden">
           <TaskAssistant />
         </div>
