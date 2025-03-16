@@ -8,6 +8,7 @@ import TaskList from "@/components/tasks/TaskList";
 import TaskForm from "@/components/tasks/TaskForm";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
 import MobileMenu from "@/components/ui/MobileMenu";
+import RightPane from "@/components/rightPane/RightPane";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +71,8 @@ const Index = () => {
               )}
             </div>
           </main>
+          
+          <RightPane />
         </div>
       </TaskProvider>
     </ThemeProvider>

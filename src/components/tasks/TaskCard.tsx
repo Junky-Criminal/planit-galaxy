@@ -1,9 +1,21 @@
 
-import React from "react";
-import { Task, TagType, PriorityType } from "@/context/TaskContext";
+import React, { useState } from "react";
+import { Task, TagType, PriorityType, useTaskContext } from "@/context/TaskContext";
 import TagBadge from "@/components/tasks/TagBadge";
-import { Bell, Calendar, Clock, Link as LinkIcon } from "lucide-react";
+import { Bell, Calendar, Clock, Link as LinkIcon, Edit, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface TaskCardProps {
   task: Task;
@@ -11,6 +23,8 @@ interface TaskCardProps {
 }
 
 const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
+  const { updateTask } = useTaskContext();
+  
   // Function to get tag-based background color for the card
   const getCardStyle = (tags: TagType[]) => {
     if (tags.length === 0) return "";
@@ -78,11 +92,24 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
               {task.title}
             </h3>
           </div>
-          {task.notificationsEnabled && (
-            <div className="rounded-full bg-primary/10 p-1.5">
-              <Bell className="h-4 w-4 text-primary" />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {task.notificationsEnabled && (
+              <div className="rounded-full bg-primary/10 p-1.5">
+                <Bell className="h-4 w-4 text-primary" />
+              </div>
+            )}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Edit task</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <TaskEditForm task={task} />
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
         
         {task.description && (
@@ -131,6 +158,202 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
         )}
       </div>
     </div>
+  );
+};
+
+interface TaskEditFormProps {
+  task: Task;
+}
+
+const TaskEditForm = ({ task }: TaskEditFormProps) => {
+  const { updateTask } = useTaskContext();
+  const [formData, setFormData] = useState({
+    title: task.title,
+    description: task.description || "",
+    priority: task.priority,
+    tags: task.tags,
+    timeSlot: task.timeSlot || "",
+    duration: task.duration || "",
+    deadline: task.deadline || "",
+    notificationsEnabled: task.notificationsEnabled || false,
+    emailNotification: task.emailNotification || "",
+    notificationTime: task.notificationTime || ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleTagChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    setFormData(prev => ({ ...prev, tags: [value as TagType] }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      toast.error("Please enter a task title");
+      return;
+    }
+    
+    updateTask(task.id, formData);
+    toast.success("Task updated successfully!");
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <SheetHeader>
+        <SheetTitle>Edit Task</SheetTitle>
+        <SheetDescription>
+          Make changes to your task here. Click save when you're done.
+        </SheetDescription>
+      </SheetHeader>
+      
+      <div>
+        <Label htmlFor="edit-title">Title</Label>
+        <Input
+          id="edit-title"
+          name="title"
+          value={formData.title}
+          onChange={handleInputChange}
+          placeholder="Task title"
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="edit-description">Description</Label>
+        <Textarea
+          id="edit-description"
+          name="description"
+          value={formData.description}
+          onChange={handleInputChange}
+          placeholder="Description (Optional)"
+        />
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="edit-priority">Priority</Label>
+          <select
+            id="edit-priority"
+            name="priority"
+            value={formData.priority}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        
+        <div>
+          <Label htmlFor="edit-tag">Tag</Label>
+          <select
+            id="edit-tag"
+            name="tags"
+            value={formData.tags[0]}
+            onChange={handleTagChange}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+            <option value="health">Health</option>
+            <option value="finance">Finance</option>
+            <option value="education">Education</option>
+            <option value="social">Social</option>
+            <option value="home">Home</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="edit-timeSlot">Time Slot</Label>
+          <Input
+            id="edit-timeSlot"
+            name="timeSlot"
+            value={formData.timeSlot}
+            onChange={handleInputChange}
+            placeholder="e.g. 10:00-11:30"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="edit-duration">Duration</Label>
+          <Input
+            id="edit-duration"
+            name="duration"
+            value={formData.duration}
+            onChange={handleInputChange}
+            placeholder="e.g. 1.5 hrs"
+          />
+        </div>
+      </div>
+      
+      <div>
+        <Label htmlFor="edit-deadline">Deadline</Label>
+        <Input
+          id="edit-deadline"
+          type="date"
+          name="deadline"
+          value={formData.deadline}
+          onChange={handleInputChange}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="edit-notifications"
+            name="notificationsEnabled"
+            checked={formData.notificationsEnabled}
+            onChange={handleCheckboxChange}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <Label htmlFor="edit-notifications" className="text-sm font-medium">
+            Enable notifications
+          </Label>
+        </div>
+        
+        {formData.notificationsEnabled && (
+          <>
+            <div>
+              <Label htmlFor="edit-email">Notification Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                name="emailNotification"
+                value={formData.emailNotification}
+                onChange={handleInputChange}
+                placeholder="Enter email for notifications"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-notification-time">Send Notification At</Label>
+              <Input
+                id="edit-notification-time"
+                type="time"
+                name="notificationTime"
+                value={formData.notificationTime}
+                onChange={handleInputChange}
+              />
+            </div>
+          </>
+        )}
+      </div>
+      
+      <Button type="submit" className="w-full">Save Changes</Button>
+    </form>
   );
 };
 

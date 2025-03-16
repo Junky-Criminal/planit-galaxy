@@ -24,7 +24,8 @@ const TaskForm = ({ className }: TaskFormProps) => {
     links: "",
     deadline: "",
     notificationsEnabled: false,
-    emailNotification: ""
+    emailNotification: "",
+    notificationTime: ""
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -35,6 +36,11 @@ const TaskForm = ({ className }: TaskFormProps) => {
   const handleTagChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = e.target;
     setFormData((prev) => ({ ...prev, tags: [value as TagType] }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleVoiceInput = (text: string) => {
@@ -52,8 +58,7 @@ const TaskForm = ({ className }: TaskFormProps) => {
     }
     
     addTask({
-      ...formData,
-      notificationsEnabled: !!formData.emailNotification || formData.notificationsEnabled
+      ...formData
     });
     
     toast.success("Task added successfully!");
@@ -70,7 +75,8 @@ const TaskForm = ({ className }: TaskFormProps) => {
       links: "",
       deadline: "",
       notificationsEnabled: false,
-      emailNotification: ""
+      emailNotification: "",
+      notificationTime: ""
     });
   };
 
@@ -195,19 +201,49 @@ const TaskForm = ({ className }: TaskFormProps) => {
           </div>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium mb-1">Email Notification</label>
-          <div className="relative">
-            <Bell className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
             <input
-              type="email"
-              name="emailNotification"
-              value={formData.emailNotification}
-              onChange={handleInputChange}
-              placeholder="Enter email for notifications (optional)"
-              className="w-full rounded-xl border border-input bg-background pl-10 pr-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              type="checkbox"
+              id="notificationsEnabled"
+              name="notificationsEnabled"
+              checked={formData.notificationsEnabled}
+              onChange={handleCheckboxChange}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
+            <label htmlFor="notificationsEnabled" className="text-sm font-medium">
+              Enable Notifications
+            </label>
           </div>
+          
+          {formData.notificationsEnabled && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Email Notification</label>
+                <div className="relative">
+                  <Bell className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="email"
+                    name="emailNotification"
+                    value={formData.emailNotification}
+                    onChange={handleInputChange}
+                    placeholder="Enter email for notifications"
+                    className="w-full rounded-xl border border-input bg-background pl-10 pr-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Send Notification At</label>
+                <input
+                  type="time"
+                  name="notificationTime"
+                  value={formData.notificationTime}
+                  onChange={handleInputChange}
+                  className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                />
+              </div>
+            </div>
+          )}
         </div>
         
         <Button 

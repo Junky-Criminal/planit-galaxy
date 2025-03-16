@@ -14,7 +14,7 @@ const TaskList = ({ completed, className }: TaskListProps) => {
   const tasks = getTasksByStatus(completed);
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-4 pr-[380px] md:pr-[380px] sm:pr-0", className)}>
       {tasks.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-muted-foreground">

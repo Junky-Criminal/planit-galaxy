@@ -30,6 +30,7 @@ export interface Task {
   createdAt: Date;
   notificationsEnabled?: boolean;
   emailNotification?: string;
+  notificationTime?: string; // Added notification time field
 }
 
 // Define the Task Context interface
@@ -59,7 +60,9 @@ const initialTasks: Task[] = [
     links: "https://example.com/gnn-research",
     deadline: "2023-09-30",
     createdAt: new Date(),
-    notificationsEnabled: true
+    notificationsEnabled: true,
+    emailNotification: "user@example.com",
+    notificationTime: "09:00"
   },
   {
     id: "2",
@@ -84,7 +87,9 @@ const initialTasks: Task[] = [
     timeSlot: "06:30-07:15",
     duration: "0.75 hrs",
     createdAt: new Date(),
-    notificationsEnabled: true
+    notificationsEnabled: true,
+    emailNotification: "user@example.com",
+    notificationTime: "06:00"
   }
 ];
 
