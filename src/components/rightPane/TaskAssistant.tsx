@@ -1,9 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot } from "lucide-react";
+import { Send, Bot, Mic } from "lucide-react";
 import { useTaskContext } from "@/context/TaskContext";
 import { toast } from "sonner";
 
@@ -31,7 +31,16 @@ const TaskAssistant = () => {
   ]);
   const [input, setInput] = useState("");
   const [taskSummary, setTaskSummary] = useState<TaskSummary | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const { addTask } = useTaskContext();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to bottom on new messages
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -49,13 +58,32 @@ const TaskAssistant = () => {
         content: "I've analyzed your task. Here's a summary:"
       };
       
+      // Generate more sophisticated title and description based on user input
+      const inputText = userMessage.content;
+      const words = inputText.split(' ');
+      
+      // Extract key parts for title (first 3-5 significant words)
+      const titleWords = words.filter(word => word.length > 3).slice(0, 4);
+      const title = titleWords.length > 0 
+        ? titleWords.join(' ').charAt(0).toUpperCase() + titleWords.join(' ').slice(1)
+        : inputText.length > 30 ? `${inputText.substring(0, 30)}...` : inputText;
+      
+      // Generate description
+      const description = `Task generated from your input: "${inputText}". You can edit this description to add more details.`;
+      
+      // Generate timeSlot in 24-hour format
+      const now = new Date();
+      const hour = now.getHours();
+      const nextHour = (hour + 1) % 24;
+      const timeSlot = `${hour.toString().padStart(2, '0')}:00-${nextHour.toString().padStart(2, '0')}:00`;
+      
       // Mock task summary - in a real app, this would come from the LLM
       const summary: TaskSummary = {
-        title: input.length > 30 ? `${input.substring(0, 30)}...` : input,
-        description: "Auto-generated description based on your input.",
+        title: title,
+        description: description,
         priority: "medium",
         tags: ["work"],
-        timeSlot: "09:00-10:00",
+        timeSlot: timeSlot,
         duration: "1 hr",
         deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
@@ -96,14 +124,49 @@ const TaskAssistant = () => {
     setInput("Please modify the task summary to...");
   };
 
+  const handleVoiceInput = () => {
+    // Check if browser supports speech recognition
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error("Voice input not supported in this browser.");
+      return;
+    }
+
+    setIsRecording(true);
+    
+    // In a real implementation, this would use the Web Speech API
+    // For now, we'll simulate a voice input after a brief delay
+    setTimeout(() => {
+      setIsRecording(false);
+      setInput("Sample voice input for creating a task");
+      toast.success("Voice input captured");
+    }, 2000);
+    
+    // Real implementation would look like:
+    /*
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+      setIsRecording(false);
+    };
+    recognition.onerror = () => {
+      setIsRecording(false);
+      toast.error("Error capturing voice");
+    };
+    recognition.start();
+    */
+  };
+
   return (
-    <div className="flex flex-col h-full p-4">
-      <div className="flex items-center gap-2 mb-4 pb-2 border-b">
+    <div className="flex flex-col h-full p-2">
+      <div className="flex items-center gap-2 mb-2 pb-2 border-b">
         <Bot className="h-5 w-5 text-primary" />
         <h3 className="text-lg font-semibold">Task Assistant</h3>
       </div>
 
-      <div className="flex-1 overflow-auto mb-4 space-y-4">
+      <div className="flex-1 overflow-auto mb-2 space-y-3 pr-1 max-h-[calc(65vh-5rem)]">
         {messages.map((message, index) => (
           <div
             key={index}
@@ -134,7 +197,7 @@ const TaskAssistant = () => {
                 </tr>
                 <tr>
                   <td className="font-medium pr-2">Description:</td>
-                  <td>{taskSummary.description}</td>
+                  <td className="text-xs">{taskSummary.description}</td>
                 </tr>
                 <tr>
                   <td className="font-medium pr-2">Priority:</td>
@@ -172,6 +235,7 @@ const TaskAssistant = () => {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="flex items-end gap-2">
@@ -179,7 +243,7 @@ const TaskAssistant = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Describe your task..."
-          className="min-h-24 resize-none"
+          className="min-h-16 resize-none text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -187,9 +251,21 @@ const TaskAssistant = () => {
             }
           }}
         />
-        <Button size="icon" onClick={handleSend} disabled={!input.trim()}>
-          <Send className="h-4 w-4" />
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Button 
+            size="icon" 
+            onClick={handleVoiceInput} 
+            disabled={isRecording} 
+            className="h-8 w-8"
+            variant="outline"
+          >
+            <Mic className="h-4 w-4" color={isRecording ? "red" : undefined} />
+            <span className="sr-only">Voice input</span>
+          </Button>
+          <Button size="icon" onClick={handleSend} disabled={!input.trim()} className="h-8 w-8">
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

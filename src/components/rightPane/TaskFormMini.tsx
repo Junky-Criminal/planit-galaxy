@@ -55,33 +55,34 @@ const TaskFormMini = () => {
   };
 
   return (
-    <div className="p-4 h-full overflow-auto">
-      <div className="flex items-center gap-2 mb-4 pb-2 border-b">
+    <div className="p-2 h-full overflow-hidden">
+      <div className="flex items-center gap-2 mb-2 pb-2 border-b">
         <PlusCircle className="h-5 w-5 text-primary" />
         <h3 className="text-lg font-semibold">Quick Add Task</h3>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-2 text-sm">
         <div>
-          <Label htmlFor="mini-title">Title</Label>
+          <Label htmlFor="mini-title" className="text-xs">Title</Label>
           <Input
             id="mini-title"
             name="title"
             value={formData.title}
             onChange={handleInputChange}
             placeholder="Task title"
+            className="h-8 text-sm"
           />
         </div>
         
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="mini-priority">Priority</Label>
+            <Label htmlFor="mini-priority" className="text-xs">Priority</Label>
             <select
               id="mini-priority"
               name="priority"
               value={formData.priority}
               onChange={handleInputChange}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="w-full h-8 rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -90,13 +91,13 @@ const TaskFormMini = () => {
           </div>
           
           <div>
-            <Label htmlFor="mini-tag">Tag</Label>
+            <Label htmlFor="mini-tag" className="text-xs">Tag</Label>
             <select
               id="mini-tag"
               name="tags"
               value={formData.tags[0]}
               onChange={handleTagChange}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="w-full h-8 rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="work">Work</option>
               <option value="personal">Personal</option>
@@ -112,29 +113,31 @@ const TaskFormMini = () => {
         
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="mini-timeSlot">Time Slot</Label>
+            <Label htmlFor="mini-timeSlot" className="text-xs">Time Slot</Label>
             <Input
               id="mini-timeSlot"
               name="timeSlot"
               value={formData.timeSlot}
               onChange={handleInputChange}
-              placeholder="e.g. 10:00-11:30"
+              placeholder="e.g. 14:00-15:30"
+              className="h-8 text-sm"
             />
           </div>
           
           <div>
-            <Label htmlFor="mini-deadline">Deadline</Label>
+            <Label htmlFor="mini-deadline" className="text-xs">Deadline</Label>
             <Input
               id="mini-deadline"
               type="date"
               name="deadline"
               value={formData.deadline}
               onChange={handleInputChange}
+              className="h-8 text-sm"
             />
           </div>
         </div>
         
-        <Button type="submit" className="w-full">Add Task</Button>
+        <Button type="submit" className="w-full h-8 text-sm">Add Task</Button>
       </form>
     </div>
   );

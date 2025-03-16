@@ -16,6 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 
 interface TaskCardProps {
@@ -209,11 +210,11 @@ const TaskEditForm = ({ task }: TaskEditFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-auto">
       <SheetHeader>
         <SheetTitle>Edit Task</SheetTitle>
         <SheetDescription>
-          Make changes to your task here. Click save when you're done.
+          Make changes to your task here.
         </SheetDescription>
       </SheetHeader>
       
@@ -236,6 +237,7 @@ const TaskEditForm = ({ task }: TaskEditFormProps) => {
           value={formData.description}
           onChange={handleInputChange}
           placeholder="Description (Optional)"
+          className="resize-none h-20"
         />
       </div>
       
@@ -284,7 +286,8 @@ const TaskEditForm = ({ task }: TaskEditFormProps) => {
             name="timeSlot"
             value={formData.timeSlot}
             onChange={handleInputChange}
-            placeholder="e.g. 10:00-11:30"
+            placeholder="e.g. 14:00-15:30"
+            type="text"
           />
         </div>
         
@@ -353,7 +356,14 @@ const TaskEditForm = ({ task }: TaskEditFormProps) => {
         )}
       </div>
       
-      <Button type="submit" className="w-full">Save Changes</Button>
+      <div className="flex justify-end gap-2 mt-4">
+        <SheetClose asChild>
+          <Button type="button" variant="outline">Cancel</Button>
+        </SheetClose>
+        <SheetClose asChild>
+          <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
+        </SheetClose>
+      </div>
     </form>
   );
 };

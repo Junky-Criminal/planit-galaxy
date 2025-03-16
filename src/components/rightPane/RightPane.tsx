@@ -29,17 +29,17 @@ const RightPane = ({ className }: RightPaneProps) => {
         variant="ghost"
         size="icon"
         onClick={togglePane}
-        className="absolute -left-3 top-4 h-8 w-8 rounded-full border bg-background shadow-md"
+        className="absolute -left-3 top-4 h-8 w-8 rounded-full border bg-background shadow-md z-20"
         aria-label={isOpen ? "Close right pane" : "Open right pane"}
       >
         {isOpen ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
       </Button>
 
-      <div className={cn("h-full overflow-auto", isOpen ? "opacity-100" : "opacity-0")}>
-        <div className="h-[65%] border-b">
+      <div className={cn("h-full overflow-hidden", isOpen ? "opacity-100" : "opacity-0")}>
+        <div className="h-[65%] border-b overflow-hidden">
           <TaskAssistant />
         </div>
-        <div className="h-[35%]">
+        <div className="h-[35%] overflow-hidden">
           <TaskFormMini />
         </div>
       </div>
