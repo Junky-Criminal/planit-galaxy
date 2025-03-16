@@ -1,11 +1,16 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Bot, Mic, MicOff } from "lucide-react";
 import { useTaskContext } from "@/context/TaskContext";
 import { toast } from "sonner";
+
+// Add TypeScript declarations for the Web Speech API
+interface Window {
+  SpeechRecognition: any;
+  webkitSpeechRecognition: any;
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -185,22 +190,24 @@ const TaskAssistant = () => {
     setIsRecording(true);
 
     try {
-      // Properly implement Web Speech API for modern browsers
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
+      // Use type assertion to help TypeScript recognize these properties
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || 
+                                  (window as any).webkitSpeechRecognition;
+      
+      const recognition = new SpeechRecognitionAPI();
       
       recognition.lang = 'en-US';
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
       
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsRecording(false);
         toast.success("Voice input captured");
       };
       
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
         setIsRecording(false);
         toast.error(`Error capturing voice: ${event.error}`);
