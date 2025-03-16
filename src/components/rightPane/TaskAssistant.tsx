@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Bot, Mic, MicOff } from "lucide-react";
 import { useTaskContext } from "@/context/TaskContext";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Add TypeScript declarations for the Web Speech API
 interface Window {
@@ -26,6 +27,49 @@ interface TaskSummary {
   duration?: string;
   deadline?: string;
 }
+
+// The system prompt for the assistant
+const SYSTEM_PROMPT = `You are an intelligent task management assistant integrated into a productivity tool. Your role is to assist users in creating tasks by extracting structured details from their inputs (provided via text or voice) and presenting them in a clear tabular summary for review. Follow these instructions:
+
+1. **Task Title and Description**:
+   - Generate a concise and meaningful title for the task based on the user's input.
+   - Create a brief description summarizing the task's purpose or key details.
+
+2. **Attribute Extraction**:
+   - Extract key attributes from the user's input, including:
+     - **Priority**: High, Medium, or Low.
+     - **Duration**: Estimated time required to complete the task.
+     - **Deadline**: Specific date and/or time mentioned by the user.
+     - **Tags**: Categorize the task into one or more user-defined tags (e.g., "Work," "Personal," "SOP").
+   - If any attribute is missing or ambiguous, ask clarifying questions to ensure accuracy.
+
+3. **Output Format**:
+   - Present the extracted information in a tabular format with the following columns:
+     - Task Title
+     - Description
+     - Priority
+     - Duration
+     - Deadline
+     - Tags
+   - Ensure the table is well-structured and easy to read.
+
+4. **Error Handling**:
+   - If the input is incomplete or unclear, politely ask for additional details.
+   - Handle edge cases (e.g., invalid dates or missing priorities) by providing default suggestions or asking for corrections.
+
+5. **Tone and Style**:
+   - Maintain a professional yet conversational tone.
+   - Be concise but thorough in your responses.
+
+6. **Notification Integration**:
+   - If the user specifies a notification preference (e.g., email alerts), include this detail in the summary.
+   - Validate email addresses if provided.
+
+7. **Context Awareness**:
+   - Recognize and process both text-based and voice-based inputs.
+   - Adapt dynamically to user preferences for light or dark themes when generating outputs, ensuring visual consistency with the app's UI.
+
+Your primary goal is to make task creation intuitive and efficient while ensuring all necessary details are captured accurately.`;
 
 const TaskAssistant = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -55,46 +99,71 @@ const TaskAssistant = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput("");
 
-    // Simulate assistant response
+    // Simulate assistant response - in a real app, this would call an actual LLM API
     setTimeout(() => {
-      // In a real app, this would be an API call to an LLM
+      // Mock LLM processing with the new system prompt
       const assistantMessage: Message = {
         role: "assistant",
-        content: "I've analyzed your task. Here's a summary:"
+        content: "I've analyzed your task request. Here's what I understand:"
       };
       
       // Generate more sophisticated title and description based on user input
       const inputText = userMessage.content;
-      const words = inputText.split(' ');
       
-      // Extract keywords for title (first 3-5 significant words)
-      const titleWords = words.filter(word => word.length > 3).slice(0, 4);
-      const title = titleWords.length > 0 
-        ? titleWords.join(' ').charAt(0).toUpperCase() + titleWords.join(' ').slice(1)
-        : inputText.length > 30 ? `${inputText.substring(0, 30)}...` : inputText;
+      // Extract a meaningful title (first sentence or first 5-7 words)
+      const titleContent = inputText.split('.')[0];
+      const title = titleContent.length > 40 
+        ? titleContent.split(' ').slice(0, 5).join(' ') + '...'
+        : titleContent;
       
-      // Generate description
-      const description = `Task based on: "${inputText}". ${generateContextBasedDescription(inputText)}`;
+      // Generate a more detailed description
+      const description = generateTaskDescription(inputText);
       
-      // Generate timeSlot in 24-hour format
-      const now = new Date();
-      const hour = now.getHours();
-      const nextHour = (hour + 1) % 24;
-      const timeSlot = `${hour.toString().padStart(2, '0')}:00-${nextHour.toString().padStart(2, '0')}:00`;
+      // Determine deadline - default to 7 days from now if not specified
+      const deadlineMatch = inputText.match(/by\s(tomorrow|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}|\d{1,2}-\d{1,2}-\d{4}|\d{4}-\d{1,2}-\d{1,2})/i);
+      const deadline = deadlineMatch 
+        ? parseDeadline(deadlineMatch[1]) 
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      // Parse duration if mentioned
+      const durationMatch = inputText.match(/(\d+)\s*(hour|hr|hours|minute|min|minutes)/i);
+      const duration = durationMatch ? `${durationMatch[1]} ${durationMatch[2]}` : "1 hr";
+      
+      // Determine time slot in 24-hour format
+      const timeSlotMatch = inputText.match(/at\s*(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
+      let timeSlot = "";
+      if (timeSlotMatch) {
+        let hours = parseInt(timeSlotMatch[1]);
+        const minutes = timeSlotMatch[2] ? timeSlotMatch[2] : "00";
+        const meridian = timeSlotMatch[3] ? timeSlotMatch[3].toLowerCase() : null;
+        
+        // Convert to 24-hour format
+        if (meridian === "pm" && hours < 12) hours += 12;
+        if (meridian === "am" && hours === 12) hours = 0;
+        
+        const endHours = (hours + 1) % 24;
+        timeSlot = `${hours.toString().padStart(2, '0')}:${minutes}-${endHours.toString().padStart(2, '0')}:${minutes}`;
+      } else {
+        // Default time slot: current hour to next hour
+        const now = new Date();
+        const hour = now.getHours();
+        const nextHour = (hour + 1) % 24;
+        timeSlot = `${hour.toString().padStart(2, '0')}:00-${nextHour.toString().padStart(2, '0')}:00`;
+      }
       
       // Determine likely tag and priority based on input
       const tag = determineTag(inputText);
       const priority = determinePriority(inputText);
       
-      // Mock task summary - in a real app, this would come from the LLM
+      // Create task summary
       const summary: TaskSummary = {
-        title: title,
+        title: title.charAt(0).toUpperCase() + title.slice(1),
         description: description,
         priority: priority,
         tags: [tag],
         timeSlot: timeSlot,
-        duration: "1 hr",
-        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        duration: duration,
+        deadline: deadline
       };
 
       setTaskSummary(summary);
@@ -102,35 +171,82 @@ const TaskAssistant = () => {
     }, 1000);
   };
 
-  // Helper function to generate a more contextual description
-  const generateContextBasedDescription = (text: string): string => {
-    if (text.toLowerCase().includes("meeting")) {
-      return "Prepare all necessary documents and talking points. Make sure to review the agenda beforehand.";
-    } else if (text.toLowerCase().includes("report") || text.toLowerCase().includes("write")) {
-      return "Gather all relevant data and information. Set aside uninterrupted time for writing and editing.";
-    } else if (text.toLowerCase().includes("call") || text.toLowerCase().includes("phone")) {
-      return "Prepare key discussion points. Have any reference materials ready before the call.";
-    } else if (text.toLowerCase().includes("research")) {
-      return "Define the scope and key questions. Identify main sources of information needed.";
+  // Helper function to generate a more detailed description
+  const generateTaskDescription = (text: string): string => {
+    // Create a more comprehensive description
+    const keyPhrases = [
+      "Remember to", 
+      "Make sure to", 
+      "Important points:", 
+      "Focus on", 
+      "Key objectives:"
+    ];
+    
+    // Select random phrase to start with
+    const phrase = keyPhrases[Math.floor(Math.random() * keyPhrases.length)];
+    
+    if (text.length < 60) {
+      return `${text}. ${phrase} complete this task efficiently and document any outcomes.`;
     } else {
-      return "Break this task into smaller steps. Consider what resources you might need to complete it efficiently.";
+      // For longer inputs, use the original text but format it better
+      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      if (sentences.length > 1) {
+        return `${sentences[0]}. ${sentences.slice(1, 3).join('. ')}`;
+      } else {
+        return text;
+      }
     }
+  };
+
+  // Helper function to parse deadline text into a date
+  const parseDeadline = (text: string): string => {
+    const today = new Date();
+    let deadlineDate = new Date();
+    
+    const lowercaseText = text.toLowerCase();
+    
+    if (lowercaseText === 'tomorrow') {
+      deadlineDate.setDate(today.getDate() + 1);
+    } else if (lowercaseText === 'next week') {
+      deadlineDate.setDate(today.getDate() + 7);
+    } else if (['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(lowercaseText)) {
+      const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const targetDay = daysOfWeek.indexOf(lowercaseText);
+      const currentDay = today.getDay();
+      let daysToAdd = targetDay - currentDay;
+      if (daysToAdd <= 0) daysToAdd += 7; // If the day has passed this week, get next week
+      
+      deadlineDate.setDate(today.getDate() + daysToAdd);
+    } else if (text.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+      // Format: MM/DD/YYYY
+      const [month, day, year] = text.split('/').map(Number);
+      deadlineDate = new Date(year, month - 1, day);
+    } else if (text.match(/\d{1,2}\/\d{1,2}/)) {
+      // Format: MM/DD (current year)
+      const [month, day] = text.split('/').map(Number);
+      deadlineDate = new Date(today.getFullYear(), month - 1, day);
+    } else if (text.match(/\d{4}-\d{1,2}-\d{1,2}/)) {
+      // Format: YYYY-MM-DD
+      return text; // Already in ISO format
+    }
+    
+    return deadlineDate.toISOString().split('T')[0];
   };
 
   // Helper function to determine tag based on input
   const determineTag = (text: string): string => {
     const lowerText = text.toLowerCase();
-    if (lowerText.includes("work") || lowerText.includes("meeting") || lowerText.includes("client") || lowerText.includes("project")) {
+    if (lowerText.includes('work') || lowerText.includes('meeting') || lowerText.includes('client') || lowerText.includes('project')) {
       return "work";
-    } else if (lowerText.includes("gym") || lowerText.includes("exercise") || lowerText.includes("workout") || lowerText.includes("run")) {
+    } else if (lowerText.includes('gym') || lowerText.includes('exercise') || lowerText.includes('workout') || lowerText.includes('run')) {
       return "health";
-    } else if (lowerText.includes("study") || lowerText.includes("read") || lowerText.includes("learn") || lowerText.includes("course")) {
+    } else if (lowerText.includes('study') || lowerText.includes('read') || lowerText.includes('learn') || lowerText.includes('course')) {
       return "education";
-    } else if (lowerText.includes("friend") || lowerText.includes("family") || lowerText.includes("party")) {
+    } else if (lowerText.includes('friend') || lowerText.includes('family') || lowerText.includes('party')) {
       return "social";
-    } else if (lowerText.includes("buy") || lowerText.includes("shop") || lowerText.includes("pay") || lowerText.includes("bill")) {
+    } else if (lowerText.includes('buy') || lowerText.includes('shop') || lowerText.includes('pay') || lowerText.includes('bill')) {
       return "finance";
-    } else if (lowerText.includes("clean") || lowerText.includes("fix") || lowerText.includes("repair") || lowerText.includes("house")) {
+    } else if (lowerText.includes('clean') || lowerText.includes('fix') || lowerText.includes('repair') || lowerText.includes('house')) {
       return "home";
     } else {
       return "personal";
@@ -140,9 +256,9 @@ const TaskAssistant = () => {
   // Helper function to determine priority based on input
   const determinePriority = (text: string): string => {
     const lowerText = text.toLowerCase();
-    if (lowerText.includes("urgent") || lowerText.includes("asap") || lowerText.includes("critical") || lowerText.includes("important")) {
+    if (lowerText.includes('urgent') || lowerText.includes('asap') || lowerText.includes('critical') || lowerText.includes('important')) {
       return "high";
-    } else if (lowerText.includes("soon") || lowerText.includes("next week") || lowerText.includes("tomorrow")) {
+    } else if (lowerText.includes('soon') || lowerText.includes('next week') || lowerText.includes('tomorrow')) {
       return "medium";
     } else {
       return "medium"; // Default to medium
@@ -239,79 +355,81 @@ const TaskAssistant = () => {
         <h3 className="text-lg font-semibold">Task Assistant</h3>
       </div>
 
-      <div className="flex-1 overflow-auto mb-2 space-y-3 pr-1 max-h-[calc(65vh-5rem)]">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              message.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+      <ScrollArea className="flex-1 pr-2 max-h-[calc(100vh-14rem)]">
+        <div className="space-y-3">
+          {messages.map((message, index) => (
             <div
-              className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
+              key={index}
+              className={`flex ${
+                message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              {message.content}
+              <div
+                className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                {message.content}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {taskSummary && (
-          <div className="bg-muted rounded-lg p-3 border text-xs">
-            <h4 className="font-medium mb-2">Task Summary:</h4>
-            <table className="w-full">
-              <tbody>
-                <tr>
-                  <td className="font-medium pr-2">Title:</td>
-                  <td>{taskSummary.title}</td>
-                </tr>
-                <tr>
-                  <td className="font-medium pr-2 align-top">Description:</td>
-                  <td>{taskSummary.description}</td>
-                </tr>
-                <tr>
-                  <td className="font-medium pr-2">Priority:</td>
-                  <td className="capitalize">{taskSummary.priority}</td>
-                </tr>
-                <tr>
-                  <td className="font-medium pr-2">Tags:</td>
-                  <td>{taskSummary.tags.join(", ")}</td>
-                </tr>
-                {taskSummary.timeSlot && (
+          {taskSummary && (
+            <div className="bg-muted rounded-lg p-3 border text-xs">
+              <h4 className="font-medium mb-2">Task Summary:</h4>
+              <table className="w-full">
+                <tbody>
                   <tr>
-                    <td className="font-medium pr-2">Time:</td>
-                    <td>{taskSummary.timeSlot}</td>
+                    <td className="font-medium pr-2">Title:</td>
+                    <td>{taskSummary.title}</td>
                   </tr>
-                )}
-                {taskSummary.duration && (
                   <tr>
-                    <td className="font-medium pr-2">Duration:</td>
-                    <td>{taskSummary.duration}</td>
+                    <td className="font-medium pr-2 align-top">Description:</td>
+                    <td>{taskSummary.description}</td>
                   </tr>
-                )}
-                {taskSummary.deadline && (
                   <tr>
-                    <td className="font-medium pr-2">Deadline:</td>
-                    <td>{taskSummary.deadline}</td>
+                    <td className="font-medium pr-2">Priority:</td>
+                    <td className="capitalize">{taskSummary.priority}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-            <div className="flex gap-2 mt-3">
-              <Button size="sm" onClick={handleCreateTask}>Create Task</Button>
-              <Button size="sm" variant="outline" onClick={handleModifyRequest}>
-                Modify
-              </Button>
+                  <tr>
+                    <td className="font-medium pr-2">Tags:</td>
+                    <td>{taskSummary.tags.join(", ")}</td>
+                  </tr>
+                  {taskSummary.timeSlot && (
+                    <tr>
+                      <td className="font-medium pr-2">Time:</td>
+                      <td>{taskSummary.timeSlot}</td>
+                    </tr>
+                  )}
+                  {taskSummary.duration && (
+                    <tr>
+                      <td className="font-medium pr-2">Duration:</td>
+                      <td>{taskSummary.duration}</td>
+                    </tr>
+                  )}
+                  {taskSummary.deadline && (
+                    <tr>
+                      <td className="font-medium pr-2">Deadline:</td>
+                      <td>{taskSummary.deadline}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <div className="flex gap-2 mt-3">
+                <Button size="sm" onClick={handleCreateTask}>Create Task</Button>
+                <Button size="sm" variant="outline" onClick={handleModifyRequest}>
+                  Modify
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
 
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-2 mt-2">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}

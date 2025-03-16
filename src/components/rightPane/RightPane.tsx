@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { ChevronsRight, ChevronsLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import TaskAssistant from "./TaskAssistant";
-import TaskFormMini from "./TaskFormMini";
 
 interface RightPaneProps {
   className?: string;
@@ -37,12 +36,7 @@ const RightPane = ({ className }: RightPaneProps) => {
 
       {/* Always render the content, but control visibility with classes */}
       <div className={cn("h-full", isOpen ? "opacity-100 visible" : "opacity-0 invisible")}>
-        <div className="h-[65%] border-b overflow-hidden">
-          <TaskAssistant />
-        </div>
-        <div className="h-[35%] overflow-hidden">
-          <TaskFormMini />
-        </div>
+        <TaskAssistant />
       </div>
     </div>
   );
