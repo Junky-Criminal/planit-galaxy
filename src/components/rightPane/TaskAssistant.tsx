@@ -27,6 +27,7 @@ interface TaskSummary {
   timeSlot?: string;
   duration?: string;
   deadline?: string;
+  scheduledDate?: string; // Added scheduled date field
 }
 
 // The system prompt for the assistant
@@ -40,7 +41,8 @@ const SYSTEM_PROMPT = `You are an intelligent task management assistant integrat
    - Extract key attributes from the user's input, including:
      - **Priority**: High, Medium, or Low.
      - **Duration**: Estimated time required to complete the task.
-     - **Deadline**: Specific date and/or time mentioned by the user.
+     - **Deadline**: Specific date and/or time mentioned by the user for task completion.
+     - **Scheduled Date**: The date when the task is scheduled to be performed (might differ from deadline).
      - **Tags**: Categorize the task into one or more user-defined tags (e.g., "Work," "Personal," "Education").
    - If any attribute is missing or ambiguous, make reasonable assumptions based on the context.
 
@@ -53,6 +55,7 @@ const SYSTEM_PROMPT = `You are an intelligent task management assistant integrat
      - Time Slot: [specific time slot if mentioned]
      - Duration: [estimated duration if mentioned]
      - Deadline: [deadline if mentioned]
+     - Scheduled Date: [scheduled date if mentioned]
 
 4. **Task Types Understanding**:
    - Be able to recognize different types of tasks (e.g., meetings, deadlines, recurring tasks).
@@ -158,6 +161,7 @@ const TaskAssistant = () => {
       timeSlot: taskSummary.timeSlot,
       duration: taskSummary.duration,
       deadline: taskSummary.deadline,
+      scheduledDate: taskSummary.scheduledDate,
       notificationsEnabled: false
     });
     
@@ -302,6 +306,12 @@ const TaskAssistant = () => {
                     <tr>
                       <td className="font-medium pr-2">Deadline:</td>
                       <td>{taskSummary.deadline}</td>
+                    </tr>
+                  )}
+                  {taskSummary.scheduledDate && (
+                    <tr>
+                      <td className="font-medium pr-2">Scheduled Date:</td>
+                      <td>{taskSummary.scheduledDate}</td>
                     </tr>
                   )}
                 </tbody>

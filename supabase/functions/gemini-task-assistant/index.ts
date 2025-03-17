@@ -98,6 +98,7 @@ serve(async (req) => {
       const timeSlotMatch = generatedText.match(/Time(\s*Slot)?:\s*([^\n]+)/);
       const durationMatch = generatedText.match(/Duration:\s*([^\n]+)/);
       const deadlineMatch = generatedText.match(/Deadline:\s*([^\n]+)/);
+      const scheduledDateMatch = generatedText.match(/Scheduled(\s*Date)?:\s*([^\n]+)/);
       
       if (titleMatch) {
         taskSummary = {
@@ -109,7 +110,8 @@ serve(async (req) => {
             ["personal"],
           timeSlot: timeSlotMatch ? timeSlotMatch[2].trim() : "",
           duration: durationMatch ? durationMatch[1].trim() : "",
-          deadline: deadlineMatch ? deadlineMatch[1].trim() : ""
+          deadline: deadlineMatch ? deadlineMatch[1].trim() : "",
+          scheduledDate: scheduledDateMatch ? scheduledDateMatch[2].trim() : ""
         };
         console.log("Successfully parsed task summary:", JSON.stringify(taskSummary));
       } else {

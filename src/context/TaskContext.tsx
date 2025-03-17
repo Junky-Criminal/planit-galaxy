@@ -27,10 +27,11 @@ export interface Task {
   expectedHours?: string;
   links?: string;
   deadline?: string;
+  scheduledDate?: string; // Added scheduled date field
   createdAt: Date;
   notificationsEnabled?: boolean;
   emailNotification?: string;
-  notificationTime?: string; // Added notification time field
+  notificationTime?: string;
 }
 
 // Define the Task Context interface
@@ -59,6 +60,7 @@ const initialTasks: Task[] = [
     duration: "3.25 hrs",
     links: "https://example.com/gnn-research",
     deadline: "2023-09-30",
+    scheduledDate: "2023-09-25", // Added scheduled date
     createdAt: new Date(),
     notificationsEnabled: true,
     emailNotification: "user@example.com",
@@ -74,6 +76,7 @@ const initialTasks: Task[] = [
     timeSlot: "10:00-12:00",
     duration: "2 hrs",
     deadline: "2023-09-25",
+    scheduledDate: "2023-09-24", // Added scheduled date
     createdAt: new Date(),
     notificationsEnabled: false
   },
@@ -86,6 +89,7 @@ const initialTasks: Task[] = [
     tags: ["health"],
     timeSlot: "06:30-07:15",
     duration: "0.75 hrs",
+    scheduledDate: "2023-09-23", // Added scheduled date
     createdAt: new Date(),
     notificationsEnabled: true,
     emailNotification: "user@example.com",

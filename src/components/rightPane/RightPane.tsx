@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronsRight, ChevronsLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,8 @@ const RightPane = ({ className }: RightPaneProps) => {
 
   const togglePane = () => {
     setIsOpen(!isOpen);
+    // Dispatch a custom event when the pane state changes
+    window.dispatchEvent(new CustomEvent('rightpane-toggle', { detail: { isOpen: !isOpen } }));
   };
 
   return (
