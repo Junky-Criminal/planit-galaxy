@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 interface HeaderProps {
   toggleMobileMenu: () => void;
@@ -35,7 +36,14 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
     // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event);
         setUser(session?.user || null);
+        
+        if (event === 'SIGNED_IN') {
+          toast.success("Successfully signed in!");
+        } else if (event === 'SIGNED_OUT') {
+          toast.success("Successfully signed out!");
+        }
       }
     );
 
@@ -45,16 +53,35 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
   }, []);
 
   const handleSignInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      
+      if (error) {
+        console.error("Google sign in error:", error);
+        toast.error(`Login failed: ${error.message}`);
+      }
+    } catch (err) {
+      console.error("Google sign in exception:", err);
+      toast.error("An unexpected error occurred during login");
+    }
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out error:", error);
+        toast.error(`Logout failed: ${error.message}`);
+      }
+    } catch (err) {
+      console.error("Sign out exception:", err);
+      toast.error("An unexpected error occurred during logout");
+    }
   };
 
   return (
@@ -91,7 +118,7 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <div className="px-2 py-1.5 text-sm font-medium">
-                  {user.user_metadata?.full_name || user.email}
+                  {user.user_metadata?.full_name || user.user_metadata?.name || user.email}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
