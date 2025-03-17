@@ -41,36 +41,28 @@ const SYSTEM_PROMPT = `You are an intelligent task management assistant integrat
      - **Priority**: High, Medium, or Low.
      - **Duration**: Estimated time required to complete the task.
      - **Deadline**: Specific date and/or time mentioned by the user.
-     - **Tags**: Categorize the task into one or more user-defined tags (e.g., "Work," "Personal," "SOP").
-   - If any attribute is missing or ambiguous, ask clarifying questions to ensure accuracy.
+     - **Tags**: Categorize the task into one or more user-defined tags (e.g., "Work," "Personal," "Education").
+   - If any attribute is missing or ambiguous, make reasonable assumptions based on the context.
 
 3. **Output Format**:
-   - Present the extracted information in a tabular format with the following columns:
-     - Task Title
-     - Description
-     - Priority
-     - Duration
-     - Deadline
-     - Tags
-   - Ensure the table is well-structured and easy to read.
+   - Present the extracted information in a tabular format with the following properties:
+     - Title: [Task Title]
+     - Description: [Description]
+     - Priority: [high/medium/low]
+     - Tags: [comma-separated list]
+     - Time Slot: [specific time slot if mentioned]
+     - Duration: [estimated duration if mentioned]
+     - Deadline: [deadline if mentioned]
 
-4. **Error Handling**:
-   - If the input is incomplete or unclear, politely ask for additional details.
-   - Handle edge cases (e.g., invalid dates or missing priorities) by providing default suggestions or asking for corrections.
+4. **Task Types Understanding**:
+   - Be able to recognize different types of tasks (e.g., meetings, deadlines, recurring tasks).
+   - Adapt your response based on the task type.
 
 5. **Tone and Style**:
    - Maintain a professional yet conversational tone.
    - Be concise but thorough in your responses.
 
-6. **Notification Integration**:
-   - If the user specifies a notification preference (e.g., email alerts), include this detail in the summary.
-   - Validate email addresses if provided.
-
-7. **Context Awareness**:
-   - Recognize and process both text-based and voice-based inputs.
-   - Adapt dynamically to user preferences for light or dark themes when generating outputs, ensuring visual consistency with the app's UI.
-
-Your primary goal is to make task creation intuitive and efficient while ensuring all necessary details are captured accurately.`;
+Your primary goal is to make task creation intuitive and efficient while ensuring all necessary details are captured accurately. Always format your output with clear labels like "Title:" and "Description:" to make parsing easier.`;
 
 const TaskAssistant = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -113,20 +105,30 @@ const TaskAssistant = () => {
       });
 
       if (error) {
+        console.error("Supabase function error:", error);
         throw new Error(error.message);
       }
+
+      if (!data) {
+        throw new Error("No data returned from Gemini API");
+      }
+
+      console.log("Response from Edge Function:", data);
 
       // Add the assistant response
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.generatedText
+        content: data.generatedText || "I'm having trouble understanding that. Could you try again?"
       };
       
       setMessages(prev => [...prev, assistantMessage]);
       
       // Set task summary if available
       if (data.taskSummary) {
+        console.log("Setting task summary:", data.taskSummary);
         setTaskSummary(data.taskSummary);
+      } else {
+        console.log("No task summary available in response");
       }
     } catch (error) {
       console.error('Error calling Gemini API:', error);
@@ -183,7 +185,12 @@ const TaskAssistant = () => {
       return;
     }
 
-    setIsRecording(true);
+    setIsRecording(prev => !prev);
+
+    if (isRecording) {
+      // If already recording, stop recording
+      return;
+    }
 
     try {
       // Use type assertion to help TypeScript recognize these properties
@@ -218,13 +225,6 @@ const TaskAssistant = () => {
       console.error('Speech recognition error:', error);
       setIsRecording(false);
       toast.error("Error initializing voice input");
-      
-      // Fallback for testing
-      setTimeout(() => {
-        setInput("Sample voice input for creating a task");
-        setIsRecording(false);
-        toast.success("Voice input simulated (fallback mode)");
-      }, 2000);
     }
   };
 
@@ -336,7 +336,7 @@ const TaskAssistant = () => {
           <Button 
             size="icon" 
             onClick={handleVoiceInput} 
-            disabled={isRecording || isProcessing} 
+            disabled={isProcessing} 
             className={`h-8 w-8 ${isRecording ? "bg-red-500 hover:bg-red-600" : ""}`}
             variant={isRecording ? "default" : "outline"}
           >

@@ -22,11 +22,16 @@ serve(async (req) => {
 
     const { messages, systemPrompt } = await req.json();
 
+    console.log("Processing request with:", { 
+      messageCount: messages.length, 
+      systemPromptLength: systemPrompt.length 
+    });
+
     // Build the complete message history with the system prompt
     const promptMessages = [
       { role: "user", parts: [{ text: systemPrompt }] },
       { role: "model", parts: [{ text: "I'll help extract task details as instructed." }] },
-      ...messages.map((msg: any) => ({
+      ...messages.map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }]
       }))
@@ -69,16 +74,18 @@ serve(async (req) => {
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Gemini API Error:', errorData);
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
     }
 
     const data = await response.json();
+    console.log("Received response from Gemini API", { status: response.status });
     
     if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
       throw new Error('Invalid response from Gemini API');
     }
 
     const generatedText = data.candidates[0].content.parts[0].text;
+    console.log("Generated text length:", generatedText.length);
 
     // Parse task details if the response contains a structured task summary
     let taskSummary = null;
@@ -97,11 +104,16 @@ serve(async (req) => {
           title: titleMatch[1].trim(),
           description: descriptionMatch ? descriptionMatch[1].trim() : "",
           priority: priorityMatch ? priorityMatch[1].toLowerCase() : "medium",
-          tags: tagsMatch ? [tagsMatch[1].trim().toLowerCase()] : ["personal"],
+          tags: tagsMatch ? 
+            tagsMatch[1].trim().toLowerCase().split(/,\s*/).map(tag => tag.trim()) : 
+            ["personal"],
           timeSlot: timeSlotMatch ? timeSlotMatch[2].trim() : "",
           duration: durationMatch ? durationMatch[1].trim() : "",
           deadline: deadlineMatch ? deadlineMatch[1].trim() : ""
         };
+        console.log("Successfully parsed task summary:", JSON.stringify(taskSummary));
+      } else {
+        console.log("No structured task data found in response");
       }
     } catch (error) {
       console.error('Error parsing task summary:', error);
