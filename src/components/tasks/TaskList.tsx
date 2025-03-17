@@ -3,15 +3,25 @@ import React, { useState, useEffect } from "react";
 import { useTaskContext } from "@/context/TaskContext";
 import TaskCard from "@/components/tasks/TaskCard";
 import { cn } from "@/lib/utils";
+import { PriorityType, TagType } from "@/context/TaskContext";
 
 interface TaskListProps {
   completed: boolean;
   className?: string;
+  dateFilter: string;
+  priorityFilter: PriorityType | "all";
+  tagFilter: TagType | "all";
 }
 
-const TaskList = ({ completed, className }: TaskListProps) => {
-  const { getTasksByStatus, toggleTaskCompletion } = useTaskContext();
-  const tasks = getTasksByStatus(completed);
+const TaskList = ({ 
+  completed, 
+  className, 
+  dateFilter, 
+  priorityFilter, 
+  tagFilter 
+}: TaskListProps) => {
+  const { getFilteredTasks, toggleTaskCompletion } = useTaskContext();
+  const tasks = getFilteredTasks(completed, dateFilter, priorityFilter, tagFilter);
   const [rightPaneOpen, setRightPaneOpen] = useState(true);
 
   // Listen for the custom event from RightPane
@@ -41,8 +51,8 @@ const TaskList = ({ completed, className }: TaskListProps) => {
         <div className="text-center py-10">
           <p className="text-muted-foreground">
             {completed 
-              ? "No completed tasks yet. Get productive!"
-              : "No pending tasks. Add a new task to get started!"}
+              ? "No completed tasks found with the selected filters."
+              : "No pending tasks found with the selected filters."}
           </p>
         </div>
       ) : (

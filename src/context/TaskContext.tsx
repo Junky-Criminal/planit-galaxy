@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { addDays, isBefore, isAfter, parseISO } from "date-fns";
 
 // Define task tag types with their colors
 export type TagType = 
@@ -42,6 +43,7 @@ interface TaskContextType {
   deleteTask: (id: string) => void;
   toggleTaskCompletion: (id: string) => void;
   getTasksByStatus: (completed: boolean) => Task[];
+  getFilteredTasks: (completed: boolean, dateFilter: string, priorityFilter: PriorityType | "all", tagFilter: TagType | "all") => Task[];
 }
 
 // Create the context
@@ -149,6 +151,54 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return tasks.filter((task) => task.completed === completed);
   };
 
+  // Get filtered tasks by multiple criteria
+  const getFilteredTasks = (
+    completed: boolean, 
+    dateFilter: string, 
+    priorityFilter: PriorityType | "all", 
+    tagFilter: TagType | "all"
+  ) => {
+    const today = new Date();
+    
+    return tasks.filter((task) => {
+      // Filter by completion status
+      if (task.completed !== completed) return false;
+      
+      // Filter by priority
+      if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+      
+      // Filter by tag
+      if (tagFilter !== "all" && !task.tags.includes(tagFilter)) return false;
+      
+      // Filter by date
+      if (dateFilter !== "all") {
+        // Parse deadline if it exists
+        const deadlineDate = task.deadline ? parseISO(task.deadline) : null;
+        
+        switch (dateFilter) {
+          case "next_day":
+            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 1));
+          case "next_week":
+            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 7));
+          case "next_month":
+            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 30));
+          case "next_six_months":
+            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 180));
+          case "past_week":
+            return deadlineDate && isBefore(deadlineDate, today) && isAfter(deadlineDate, addDays(today, -7));
+          case "past_month":
+            return deadlineDate && isBefore(deadlineDate, today) && isAfter(deadlineDate, addDays(today, -30));
+          case "all_past":
+            return deadlineDate && isBefore(deadlineDate, today);
+          default:
+            return true;
+        }
+      }
+      
+      return true;
+    });
+  };
+
   return (
     <TaskContext.Provider
       value={{
@@ -157,7 +207,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         updateTask,
         deleteTask,
         toggleTaskCompletion,
-        getTasksByStatus
+        getTasksByStatus,
+        getFilteredTasks
       }}
     >
       {children}
