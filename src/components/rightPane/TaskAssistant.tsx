@@ -2,10 +2,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, Mic, MicOff } from "lucide-react";
+import { Send, Bot, Mic, MicOff, Loader2 } from "lucide-react";
 import { useTaskContext } from "@/context/TaskContext";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
 
 // Add TypeScript declarations for the Web Speech API
 interface Window {
@@ -81,6 +82,7 @@ const TaskAssistant = () => {
   const [input, setInput] = useState("");
   const [taskSummary, setTaskSummary] = useState<TaskSummary | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { addTask } = useTaskContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -91,177 +93,55 @@ const TaskAssistant = () => {
     }
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     // Add user message
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput("");
+    setIsProcessing(true);
 
-    // Simulate assistant response - in a real app, this would call an actual LLM API
-    setTimeout(() => {
-      // Mock LLM processing with the new system prompt
+    try {
+      // Call the Edge Function to process the message with Gemini
+      const allMessages = [...messages, userMessage];
+      const { data, error } = await supabase.functions.invoke('gemini-task-assistant', {
+        body: {
+          messages: allMessages,
+          systemPrompt: SYSTEM_PROMPT
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Add the assistant response
       const assistantMessage: Message = {
         role: "assistant",
-        content: "I've analyzed your task request. Here's what I understand:"
+        content: data.generatedText
       };
       
-      // Generate more sophisticated title and description based on user input
-      const inputText = userMessage.content;
-      
-      // Extract a meaningful title (first sentence or first 5-7 words)
-      const titleContent = inputText.split('.')[0];
-      const title = titleContent.length > 40 
-        ? titleContent.split(' ').slice(0, 5).join(' ') + '...'
-        : titleContent;
-      
-      // Generate a more detailed description
-      const description = generateTaskDescription(inputText);
-      
-      // Determine deadline - default to 7 days from now if not specified
-      const deadlineMatch = inputText.match(/by\s(tomorrow|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}|\d{1,2}-\d{1,2}-\d{4}|\d{4}-\d{1,2}-\d{1,2})/i);
-      const deadline = deadlineMatch 
-        ? parseDeadline(deadlineMatch[1]) 
-        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
-      // Parse duration if mentioned
-      const durationMatch = inputText.match(/(\d+)\s*(hour|hr|hours|minute|min|minutes)/i);
-      const duration = durationMatch ? `${durationMatch[1]} ${durationMatch[2]}` : "1 hr";
-      
-      // Determine time slot in 24-hour format
-      const timeSlotMatch = inputText.match(/at\s*(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
-      let timeSlot = "";
-      if (timeSlotMatch) {
-        let hours = parseInt(timeSlotMatch[1]);
-        const minutes = timeSlotMatch[2] ? timeSlotMatch[2] : "00";
-        const meridian = timeSlotMatch[3] ? timeSlotMatch[3].toLowerCase() : null;
-        
-        // Convert to 24-hour format
-        if (meridian === "pm" && hours < 12) hours += 12;
-        if (meridian === "am" && hours === 12) hours = 0;
-        
-        const endHours = (hours + 1) % 24;
-        timeSlot = `${hours.toString().padStart(2, '0')}:${minutes}-${endHours.toString().padStart(2, '0')}:${minutes}`;
-      } else {
-        // Default time slot: current hour to next hour
-        const now = new Date();
-        const hour = now.getHours();
-        const nextHour = (hour + 1) % 24;
-        timeSlot = `${hour.toString().padStart(2, '0')}:00-${nextHour.toString().padStart(2, '0')}:00`;
-      }
-      
-      // Determine likely tag and priority based on input
-      const tag = determineTag(inputText);
-      const priority = determinePriority(inputText);
-      
-      // Create task summary
-      const summary: TaskSummary = {
-        title: title.charAt(0).toUpperCase() + title.slice(1),
-        description: description,
-        priority: priority,
-        tags: [tag],
-        timeSlot: timeSlot,
-        duration: duration,
-        deadline: deadline
-      };
-
-      setTaskSummary(summary);
       setMessages(prev => [...prev, assistantMessage]);
-    }, 1000);
-  };
-
-  // Helper function to generate a more detailed description
-  const generateTaskDescription = (text: string): string => {
-    // Create a more comprehensive description
-    const keyPhrases = [
-      "Remember to", 
-      "Make sure to", 
-      "Important points:", 
-      "Focus on", 
-      "Key objectives:"
-    ];
-    
-    // Select random phrase to start with
-    const phrase = keyPhrases[Math.floor(Math.random() * keyPhrases.length)];
-    
-    if (text.length < 60) {
-      return `${text}. ${phrase} complete this task efficiently and document any outcomes.`;
-    } else {
-      // For longer inputs, use the original text but format it better
-      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-      if (sentences.length > 1) {
-        return `${sentences[0]}. ${sentences.slice(1, 3).join('. ')}`;
-      } else {
-        return text;
-      }
-    }
-  };
-
-  // Helper function to parse deadline text into a date
-  const parseDeadline = (text: string): string => {
-    const today = new Date();
-    let deadlineDate = new Date();
-    
-    const lowercaseText = text.toLowerCase();
-    
-    if (lowercaseText === 'tomorrow') {
-      deadlineDate.setDate(today.getDate() + 1);
-    } else if (lowercaseText === 'next week') {
-      deadlineDate.setDate(today.getDate() + 7);
-    } else if (['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(lowercaseText)) {
-      const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const targetDay = daysOfWeek.indexOf(lowercaseText);
-      const currentDay = today.getDay();
-      let daysToAdd = targetDay - currentDay;
-      if (daysToAdd <= 0) daysToAdd += 7; // If the day has passed this week, get next week
       
-      deadlineDate.setDate(today.getDate() + daysToAdd);
-    } else if (text.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
-      // Format: MM/DD/YYYY
-      const [month, day, year] = text.split('/').map(Number);
-      deadlineDate = new Date(year, month - 1, day);
-    } else if (text.match(/\d{1,2}\/\d{1,2}/)) {
-      // Format: MM/DD (current year)
-      const [month, day] = text.split('/').map(Number);
-      deadlineDate = new Date(today.getFullYear(), month - 1, day);
-    } else if (text.match(/\d{4}-\d{1,2}-\d{1,2}/)) {
-      // Format: YYYY-MM-DD
-      return text; // Already in ISO format
-    }
-    
-    return deadlineDate.toISOString().split('T')[0];
-  };
-
-  // Helper function to determine tag based on input
-  const determineTag = (text: string): string => {
-    const lowerText = text.toLowerCase();
-    if (lowerText.includes('work') || lowerText.includes('meeting') || lowerText.includes('client') || lowerText.includes('project')) {
-      return "work";
-    } else if (lowerText.includes('gym') || lowerText.includes('exercise') || lowerText.includes('workout') || lowerText.includes('run')) {
-      return "health";
-    } else if (lowerText.includes('study') || lowerText.includes('read') || lowerText.includes('learn') || lowerText.includes('course')) {
-      return "education";
-    } else if (lowerText.includes('friend') || lowerText.includes('family') || lowerText.includes('party')) {
-      return "social";
-    } else if (lowerText.includes('buy') || lowerText.includes('shop') || lowerText.includes('pay') || lowerText.includes('bill')) {
-      return "finance";
-    } else if (lowerText.includes('clean') || lowerText.includes('fix') || lowerText.includes('repair') || lowerText.includes('house')) {
-      return "home";
-    } else {
-      return "personal";
-    }
-  };
-
-  // Helper function to determine priority based on input
-  const determinePriority = (text: string): string => {
-    const lowerText = text.toLowerCase();
-    if (lowerText.includes('urgent') || lowerText.includes('asap') || lowerText.includes('critical') || lowerText.includes('important')) {
-      return "high";
-    } else if (lowerText.includes('soon') || lowerText.includes('next week') || lowerText.includes('tomorrow')) {
-      return "medium";
-    } else {
-      return "medium"; // Default to medium
+      // Set task summary if available
+      if (data.taskSummary) {
+        setTaskSummary(data.taskSummary);
+      }
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      toast.error("Failed to process your request. Please try again.");
+      
+      // Add error message
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "I'm having trouble processing your request right now. Please try again later."
+        }
+      ]);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -376,6 +256,15 @@ const TaskAssistant = () => {
             </div>
           ))}
 
+          {isProcessing && (
+            <div className="flex justify-start">
+              <div className="bg-muted rounded-lg px-3 py-2 text-sm flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Thinking...</span>
+              </div>
+            </div>
+          )}
+
           {taskSummary && (
             <div className="bg-muted rounded-lg p-3 border text-xs">
               <h4 className="font-medium mb-2">Task Summary:</h4>
@@ -441,20 +330,26 @@ const TaskAssistant = () => {
               handleSend();
             }
           }}
+          disabled={isProcessing}
         />
         <div className="flex flex-col gap-1">
           <Button 
             size="icon" 
             onClick={handleVoiceInput} 
-            disabled={isRecording} 
+            disabled={isRecording || isProcessing} 
             className={`h-8 w-8 ${isRecording ? "bg-red-500 hover:bg-red-600" : ""}`}
             variant={isRecording ? "default" : "outline"}
           >
             {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             <span className="sr-only">Voice input</span>
           </Button>
-          <Button size="icon" onClick={handleSend} disabled={!input.trim()} className="h-8 w-8">
-            <Send className="h-4 w-4" />
+          <Button 
+            size="icon" 
+            onClick={handleSend} 
+            disabled={!input.trim() || isProcessing} 
+            className="h-8 w-8"
+          >
+            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>
