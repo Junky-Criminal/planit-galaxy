@@ -22,6 +22,10 @@ interface HeaderProps {
 const Header = ({ toggleMobileMenu }: HeaderProps) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     // Check current session
@@ -52,22 +56,48 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
     };
   }, []);
 
-  const handleSignInWithGoogle = async () => {
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin,
-        },
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
       
       if (error) {
-        console.error("Google sign in error:", error);
+        console.error("Sign in error:", error);
         toast.error(`Login failed: ${error.message}`);
+      } else {
+        setShowAuthModal(false);
+        setEmail("");
+        setPassword("");
       }
     } catch (err) {
-      console.error("Google sign in exception:", err);
+      console.error("Sign in exception:", err);
       toast.error("An unexpected error occurred during login");
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error("Sign up error:", error);
+        toast.error(`Registration failed: ${error.message}`);
+      } else {
+        toast.success("Check your email for a confirmation link!");
+        setShowAuthModal(false);
+        setEmail("");
+        setPassword("");
+      }
+    } catch (err) {
+      console.error("Sign up exception:", err);
+      toast.error("An unexpected error occurred during registration");
     }
   };
 
@@ -105,20 +135,12 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
                   size="icon" 
                   className="rounded-full h-10 w-10 p-0 bg-secondary/80 hover:bg-secondary"
                 >
-                  {user.user_metadata?.avatar_url ? (
-                    <img 
-                      src={user.user_metadata.avatar_url} 
-                      alt="User avatar" 
-                      className="rounded-full h-full w-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-5 w-5" />
-                  )}
+                  <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <div className="px-2 py-1.5 text-sm font-medium">
-                  {user.user_metadata?.full_name || user.user_metadata?.name || user.email}
+                  {user.email}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
@@ -131,11 +153,14 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
             <Button
               variant="secondary"
               size="sm"
-              onClick={handleSignInWithGoogle}
+              onClick={() => {
+                setIsLogin(true);
+                setShowAuthModal(true);
+              }}
               className="flex items-center gap-2"
             >
               <LogIn className="h-4 w-4" />
-              Login with Google
+              Login
             </Button>
           )}
           
@@ -153,6 +178,78 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
           </button>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-4">{isLogin ? "Login" : "Register"}</h2>
+            
+            <form onSubmit={isLogin ? handleSignIn : handleSignUp} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <input 
+                  type="email" 
+                  id="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-2 border rounded-md bg-background"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium">Password</label>
+                <input 
+                  type="password" 
+                  id="password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-2 border rounded-md bg-background"
+                  required
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => setShowAuthModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">{isLogin ? "Login" : "Register"}</Button>
+              </div>
+              
+              <div className="text-center text-sm">
+                {isLogin ? (
+                  <p>
+                    Don't have an account?{" "}
+                    <button 
+                      type="button"
+                      onClick={() => setIsLogin(false)}
+                      className="text-primary hover:underline"
+                    >
+                      Register
+                    </button>
+                  </p>
+                ) : (
+                  <p>
+                    Already have an account?{" "}
+                    <button 
+                      type="button"
+                      onClick={() => setIsLogin(true)}
+                      className="text-primary hover:underline"
+                    >
+                      Login
+                    </button>
+                  </p>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

@@ -3,15 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { addDays, isBefore, isAfter, parseISO } from "date-fns";
 
 // Define task tag types with their colors
-export type TagType = 
-  | "work" 
-  | "personal" 
-  | "health" 
-  | "finance" 
-  | "education" 
-  | "social" 
-  | "home" 
-  | "other";
+export type TagType = string;
 
 export type PriorityType = "low" | "medium" | "high";
 
@@ -225,16 +217,20 @@ export function useTaskContext() {
   return context;
 }
 
-// Map tag types to colors
-export const tagColors: Record<TagType, string> = {
-  work: "tag-blue",
-  personal: "tag-purple",
-  health: "tag-green",
-  finance: "tag-yellow",
-  education: "tag-orange",
-  social: "tag-pink",
-  home: "tag-teal",
-  other: "tag-gray"
+// Map tag types to colors - now we need a more flexible approach since we support custom tags
+export const getTagColor = (tag: string): string => {
+  const defaultColors: Record<string, string> = {
+    work: "tag-blue",
+    personal: "tag-purple",
+    health: "tag-green",
+    finance: "tag-yellow",
+    education: "tag-orange",
+    social: "tag-pink",
+    home: "tag-teal",
+    other: "tag-gray"
+  };
+  
+  return defaultColors[tag] || "tag-gray"; // Return "tag-gray" for unknown tags
 };
 
 // Map priority to colors

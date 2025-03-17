@@ -5,8 +5,15 @@ import { cn } from "@/lib/utils";
 import VoiceInputButton from "@/components/ui/VoiceInputButton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Bell, Calendar, Clock, Link as LinkIcon, X, Plus } from "lucide-react";
+import { Bell, Calendar, Clock, Link as LinkIcon, X, Plus, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TaskFormProps {
   className?: string;
@@ -30,9 +37,9 @@ const TaskForm = ({ className }: TaskFormProps) => {
     notificationTime: ""
   });
   
+  const [availableTags, setAvailableTags] = useState<TagType[]>(["work", "personal", "health", "finance", "education", "social", "home", "other"]);
   const [customTag, setCustomTag] = useState("");
-  
-  const availableTags: TagType[] = ["work", "personal", "health", "finance", "education", "social", "home", "other"];
+  const [showTagInput, setShowTagInput] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -57,16 +64,15 @@ const TaskForm = ({ className }: TaskFormProps) => {
     
     const normalizedTag = customTag.toLowerCase().trim() as TagType;
     
-    // Check if the tag is already in the list of available tags
-    if (!availableTags.includes(normalizedTag)) {
-      toast.error("Please select from the available tags");
-      return;
-    }
-    
     // Check if tag is already selected
     if (formData.tags.includes(normalizedTag)) {
       toast.info("This tag is already added");
       return;
+    }
+    
+    // If tag doesn't exist in available tags, add it
+    if (!availableTags.includes(normalizedTag)) {
+      setAvailableTags(prev => [...prev, normalizedTag]);
     }
     
     setFormData(prev => ({
@@ -75,6 +81,23 @@ const TaskForm = ({ className }: TaskFormProps) => {
     }));
     
     setCustomTag("");
+    setShowTagInput(false);
+  };
+  
+  const handleTagToggle = (tag: TagType) => {
+    setFormData(prev => {
+      if (prev.tags.includes(tag)) {
+        return {
+          ...prev,
+          tags: prev.tags.filter(t => t !== tag)
+        };
+      } else {
+        return {
+          ...prev,
+          tags: [...prev.tags, tag]
+        };
+      }
+    });
   };
   
   const handleRemoveTag = (tag: TagType) => {
@@ -185,26 +208,64 @@ const TaskForm = ({ className }: TaskFormProps) => {
               ))}
             </div>
             
-            <div className="flex gap-2">
-              <select
-                value={customTag}
-                onChange={(e) => setCustomTag(e.target.value)}
-                className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-              >
-                <option value="">Select a tag</option>
-                {availableTags.filter(tag => !formData.tags.includes(tag)).map(tag => (
-                  <option key={tag} value={tag}>{tag}</option>
-                ))}
-              </select>
-              <Button 
-                type="button" 
-                size="icon" 
-                variant="outline" 
-                onClick={handleAddCustomTag}
-                disabled={!customTag}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+            <div className="space-y-2">
+              {!showTagInput ? (
+                <div className="flex gap-2">
+                  <Select
+                    onValueChange={(value: string) => {
+                      if (value === "custom") {
+                        setShowTagInput(true);
+                      } else if (value) {
+                        handleTagToggle(value as TagType);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTags
+                        .filter(tag => !formData.tags.includes(tag))
+                        .map(tag => (
+                          <SelectItem key={tag} value={tag}>
+                            {tag}
+                          </SelectItem>
+                      ))}
+                      <SelectItem value="custom">+ Add custom tag</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customTag}
+                    onChange={(e) => setCustomTag(e.target.value)}
+                    placeholder="Enter custom tag"
+                    className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  />
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="outline" 
+                    onClick={handleAddCustomTag}
+                    disabled={!customTag}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowTagInput(false);
+                      setCustomTag("");
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
