@@ -47,7 +47,13 @@ const Header = ({ toggleMobileMenu }: HeaderProps) => {
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle menu</span>
         </button>
-        <h1 className="text-xl font-bold tracking-tight">Task Manager</h1>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold tracking-tight">
+            <span className="bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent font-bold">
+              Say Hello to Productivity
+            </span>
+          </h1>
+        </div>
       </div>
       
       <div className="flex items-center gap-4">
