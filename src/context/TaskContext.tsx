@@ -217,20 +217,21 @@ export function useTaskContext() {
   return context;
 }
 
+// Export the tag colors mapping
+export const tagColors: Record<string, string> = {
+  work: "tag-blue",
+  personal: "tag-purple",
+  health: "tag-green",
+  finance: "tag-yellow",
+  education: "tag-orange",
+  social: "tag-pink",
+  home: "tag-teal",
+  other: "tag-gray"
+};
+
 // Map tag types to colors - now we need a more flexible approach since we support custom tags
 export const getTagColor = (tag: string): string => {
-  const defaultColors: Record<string, string> = {
-    work: "tag-blue",
-    personal: "tag-purple",
-    health: "tag-green",
-    finance: "tag-yellow",
-    education: "tag-orange",
-    social: "tag-pink",
-    home: "tag-teal",
-    other: "tag-gray"
-  };
-  
-  return defaultColors[tag] || "tag-gray"; // Return "tag-gray" for unknown tags
+  return tagColors[tag] || "tag-gray"; // Return "tag-gray" for unknown tags
 };
 
 // Map priority to colors
