@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useTaskContext, TagType, PriorityType } from "@/context/TaskContext";
 import { toast } from "sonner";
 import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Tag, Settings, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -17,9 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const LeftPane = () => {
-  const { addTask } = useTaskContext();
+  const { addTask, availableTags, addCustomTag, removeTag } = useTaskContext();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,9 +39,9 @@ const LeftPane = () => {
     scheduledDate: "",
   });
   
-  const [availableTags, setAvailableTags] = useState<TagType[]>(["work", "personal", "health", "finance", "education", "social", "home", "other"]);
   const [customTag, setCustomTag] = useState("");
   const [showTagInput, setShowTagInput] = useState(false);
+  const [tagToRemove, setTagToRemove] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -66,10 +75,8 @@ const LeftPane = () => {
       return;
     }
     
-    // If tag doesn't exist in available tags, add it
-    if (!availableTags.includes(normalizedTag)) {
-      setAvailableTags(prev => [...prev, normalizedTag]);
-    }
+    // Add to available tags if not already there
+    addCustomTag(normalizedTag);
     
     setFormData(prev => ({
       ...prev,
@@ -85,6 +92,14 @@ const LeftPane = () => {
       ...prev,
       tags: prev.tags.filter(t => t !== tag)
     }));
+  };
+
+  const handleDeleteTag = () => {
+    if (tagToRemove) {
+      removeTag(tagToRemove);
+      toast.success(`Tag "${tagToRemove}" removed`);
+      setTagToRemove(null);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -121,7 +136,10 @@ const LeftPane = () => {
 
   return (
     <aside className="w-full h-full bg-background border-r p-4">
-      <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Add New Task</h2>
+        <Button type="submit" size="sm" onClick={handleSubmit}>Add Task</Button>
+      </div>
       <Separator className="mb-4" />
       
       <ScrollArea className="h-[calc(100vh-12rem)]">
@@ -179,7 +197,50 @@ const LeftPane = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="tags">Tags</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="tags">Tags</Label>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Manage Tags</DialogTitle>
+                    <DialogDescription>
+                      Select a tag to remove it from the available tags.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-wrap gap-2 my-4">
+                    {availableTags.map(tag => (
+                      <Badge 
+                        key={tag} 
+                        variant="outline"
+                        className="flex items-center gap-1 px-2 py-1 cursor-pointer"
+                        onClick={() => setTagToRemove(tag)}
+                      >
+                        {tag}
+                        {tagToRemove === tag && (
+                          <div className="bg-destructive/20 absolute inset-0 rounded flex items-center justify-center">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </div>
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleDeleteTag}
+                      disabled={!tagToRemove}
+                    >
+                      Remove Selected Tag
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
             <div className="flex flex-wrap gap-2 mb-2">
               {formData.tags.map(tag => (
                 <Badge 
@@ -281,8 +342,6 @@ const LeftPane = () => {
               onChange={handleInputChange}
             />
           </div>
-          
-          <Button type="submit" className="w-full">Add Task</Button>
         </form>
       </ScrollArea>
     </aside>

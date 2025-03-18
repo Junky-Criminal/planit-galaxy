@@ -1,6 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { addDays, isBefore, isAfter, parseISO } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define task tag types with their colors
 export type TagType = string;
@@ -36,6 +36,9 @@ interface TaskContextType {
   toggleTaskCompletion: (id: string) => void;
   getTasksByStatus: (completed: boolean) => Task[];
   getFilteredTasks: (completed: boolean, dateFilter: string, priorityFilter: PriorityType | "all", tagFilter: TagType | "all") => Task[];
+  availableTags: TagType[];
+  addCustomTag: (tag: TagType) => void;
+  removeTag: (tag: TagType) => void;
 }
 
 // Create the context
@@ -91,6 +94,9 @@ const initialTasks: Task[] = [
   }
 ];
 
+// Initial available tags
+const initialAvailableTags: TagType[] = ["work", "personal", "health", "finance", "education", "social", "home", "other"];
+
 // Provider component
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -99,10 +105,21 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return savedTasks ? JSON.parse(savedTasks) : initialTasks;
   });
 
+  const [availableTags, setAvailableTags] = useState<TagType[]>(() => {
+    // Try to load available tags from localStorage
+    const savedTags = localStorage.getItem("availableTags");
+    return savedTags ? JSON.parse(savedTags) : initialAvailableTags;
+  });
+
   // Save tasks to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
+
+  // Save available tags to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("availableTags", JSON.stringify(availableTags));
+  }, [availableTags]);
 
   // Add a new task
   const addTask = (taskData: Omit<Task, "id" | "createdAt" | "completed">) => {
@@ -135,6 +152,31 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       prevTasks.map((task) =>
         task.id === id ? { ...task, completed: !task.completed } : task
       )
+    );
+  };
+
+  // Add a custom tag to available tags
+  const addCustomTag = (tag: TagType) => {
+    if (!availableTags.includes(tag)) {
+      setAvailableTags(prev => [...prev, tag]);
+    }
+  };
+
+  // Remove a tag from available tags
+  const removeTag = (tag: TagType) => {
+    setAvailableTags(prev => prev.filter(t => t !== tag));
+    
+    // Update any tasks that have this tag
+    setTasks(prevTasks => 
+      prevTasks.map(task => {
+        if (task.tags.includes(tag)) {
+          return {
+            ...task,
+            tags: task.tags.filter(t => t !== tag)
+          };
+        }
+        return task;
+      })
     );
   };
 
@@ -200,7 +242,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         deleteTask,
         toggleTaskCompletion,
         getTasksByStatus,
-        getFilteredTasks
+        getFilteredTasks,
+        availableTags,
+        addCustomTag,
+        removeTag
       }}
     >
       {children}
