@@ -55,32 +55,58 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
 
+  console.log("TaskProvider initialized, isLoading:", isLoading);
+
   // Check for user session on mount
   useEffect(() => {
     const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-
-      // Set up auth state change listener
-      const { data: authListener } = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          setSession(session);
-          if (session) {
-            fetchTasks();
-            fetchTags();
-          } else {
-            setTasks([]);
-            setAvailableTags([]);
-          }
+      console.log("Getting session...");
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          setIsLoading(false);
+          return;
         }
-      );
-
-      return () => {
-        authListener.subscription.unsubscribe();
-      };
+        
+        console.log("Session data:", data.session ? "Session exists" : "No session");
+        setSession(data.session);
+        
+        if (data.session) {
+          await fetchTasks();
+          await fetchTags();
+        }
+      } catch (err) {
+        console.error("Unexpected error in getSession:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log("Auth state changed:", event);
+        setSession(newSession);
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setIsLoading(true);
+          await fetchTasks();
+          await fetchTags();
+          setIsLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setTasks([]);
+          setAvailableTags([]);
+        }
+      }
+    );
+
     getSession();
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // Fetch tasks when the session changes
