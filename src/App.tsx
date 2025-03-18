@@ -5,6 +5,8 @@ import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import { Toaster } from "@/components/ui/sonner";
 import { useTaskContext } from "@/context/TaskContext";
+import { TaskProvider } from "@/context/TaskContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useTaskContext();
@@ -22,21 +24,25 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route 
-          path="/" 
-          element={
-            <PrivateRoute>
-              <Index />
-            </PrivateRoute>
-          } 
-        />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster position="top-right" closeButton />
-    </Router>
+    <ThemeProvider>
+      <TaskProvider>
+        <Router>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route 
+              path="/" 
+              element={
+                <PrivateRoute>
+                  <Index />
+                </PrivateRoute>
+              } 
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster position="top-right" closeButton />
+        </Router>
+      </TaskProvider>
+    </ThemeProvider>
   );
 }
 
