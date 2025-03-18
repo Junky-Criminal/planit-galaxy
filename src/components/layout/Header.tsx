@@ -1,6 +1,6 @@
 
 import React from "react";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { Bell, LogOut, Menu, User } from "lucide-react";
 import { useTaskContext } from "@/context/TaskContext";
 import { supabase } from "@/integrations/supabase/client";
