@@ -9,7 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      tasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          deadline: string | null
+          description: string | null
+          duration: string | null
+          email_notification: string | null
+          expected_hours: string | null
+          id: string
+          links: string | null
+          notification_time: string | null
+          notifications_enabled: boolean | null
+          priority: string
+          scheduled_date: string | null
+          tags: string[]
+          time_slot: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          duration?: string | null
+          email_notification?: string | null
+          expected_hours?: string | null
+          id?: string
+          links?: string | null
+          notification_time?: string | null
+          notifications_enabled?: boolean | null
+          priority: string
+          scheduled_date?: string | null
+          tags?: string[]
+          time_slot?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          duration?: string | null
+          email_notification?: string | null
+          expected_hours?: string | null
+          id?: string
+          links?: string | null
+          notification_time?: string | null
+          notifications_enabled?: boolean | null
+          priority?: string
+          scheduled_date?: string | null
+          tags?: string[]
+          time_slot?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_tags: {
+        Row: {
+          id: string
+          tag: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          tag: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          tag?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

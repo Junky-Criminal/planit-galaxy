@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useTaskContext, TagType, PriorityType } from "@/context/TaskContext";
 import { toast } from "sonner";
 import { useState } from "react";
-import { X, Plus, Tag, Settings, Trash2 } from "lucide-react";
+import { X, Plus, Tag, Settings, Trash2, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -26,17 +26,23 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 const LeftPane = () => {
-  const { addTask, availableTags, addCustomTag, removeTag } = useTaskContext();
+  const { addTask, availableTags, addCustomTag, removeTag, session } = useTaskContext();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     priority: "medium" as PriorityType,
     tags: ["work"] as TagType[],
     timeSlot: "",
+    duration: "",
+    links: "",
     deadline: "",
     scheduledDate: "",
+    notificationsEnabled: false,
+    emailNotification: session?.user?.email || "",
+    notificationTime: "09:00"
   });
   
   const [customTag, setCustomTag] = useState("");
@@ -46,6 +52,10 @@ const LeftPane = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleTagToggle = (tag: TagType) => {
@@ -102,8 +112,13 @@ const LeftPane = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!session) {
+      toast.error("Please log in to add tasks");
+      return;
+    }
     
     if (!formData.title.trim()) {
       toast.error("Please enter a task title");
@@ -115,10 +130,7 @@ const LeftPane = () => {
       return;
     }
     
-    addTask({
-      ...formData,
-      notificationsEnabled: false
-    });
+    await addTask(formData);
     
     toast.success("Task added successfully!");
     
@@ -129,16 +141,36 @@ const LeftPane = () => {
       priority: "medium",
       tags: ["work"],
       timeSlot: "",
+      duration: "",
+      links: "",
       deadline: "",
       scheduledDate: "",
+      notificationsEnabled: false,
+      emailNotification: session?.user?.email || "",
+      notificationTime: "09:00"
     });
   };
+
+  if (!session) {
+    return (
+      <aside className="w-full h-full bg-background border-r p-4 flex items-center justify-center">
+        <div className="text-center p-4">
+          <h3 className="text-lg font-medium mb-2">Please sign in</h3>
+          <p className="text-muted-foreground text-sm mb-4">
+            Sign in to add and manage tasks
+          </p>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className="w-full h-full bg-background border-r p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Add New Task</h2>
-        <Button type="submit" size="sm" onClick={handleSubmit}>Add Task</Button>
+        <Button type="submit" size="sm" onClick={handleSubmit}>
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
       <Separator className="mb-4" />
       
@@ -333,6 +365,28 @@ const LeftPane = () => {
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="duration">Duration</Label>
+            <Input
+              id="duration"
+              name="duration"
+              value={formData.duration}
+              onChange={handleInputChange}
+              placeholder="e.g. 2 hrs"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="links">Links and Resources</Label>
+            <Input
+              id="links"
+              name="links"
+              value={formData.links}
+              onChange={handleInputChange}
+              placeholder="URLs or resources"
+            />
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="deadline">Deadline</Label>
             <Input
               id="deadline"
@@ -341,6 +395,51 @@ const LeftPane = () => {
               value={formData.deadline}
               onChange={handleInputChange}
             />
+          </div>
+          
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center justify-between pb-2">
+              <div className="flex items-center space-x-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="notificationsEnabled" className="text-sm font-medium cursor-pointer">
+                  Enable Notifications
+                </Label>
+              </div>
+              <Switch
+                id="notificationsEnabled"
+                checked={formData.notificationsEnabled}
+                onCheckedChange={(checked) => 
+                  handleCheckboxChange("notificationsEnabled", checked)
+                }
+              />
+            </div>
+            
+            {formData.notificationsEnabled && (
+              <div className="space-y-4 animate-in slide-in-from-top duration-300">
+                <div className="space-y-2">
+                  <Label htmlFor="emailNotification">Email for Notifications</Label>
+                  <Input
+                    id="emailNotification"
+                    type="email"
+                    name="emailNotification"
+                    value={formData.emailNotification}
+                    onChange={handleInputChange}
+                    placeholder="Enter email for notifications"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="notificationTime">Notification Time</Label>
+                  <Input
+                    id="notificationTime"
+                    type="time"
+                    name="notificationTime"
+                    value={formData.notificationTime}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </form>
       </ScrollArea>

@@ -1,44 +1,74 @@
 
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronsRight, ChevronsLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import TaskAssistant from "./TaskAssistant";
+import TaskAssistant from "@/components/rightPane/TaskAssistant";
+import TaskFormMini from "@/components/rightPane/TaskFormMini";
+import { Button } from "@/components/ui/button";
+import { MessageSquare } from "lucide-react";
 
-interface RightPaneProps {
-  className?: string;
-}
-
-const RightPane = ({ className }: RightPaneProps) => {
+const RightPane = () => {
   const [isOpen, setIsOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<"assistant" | "quick-add">("assistant");
 
   const togglePane = () => {
     setIsOpen(!isOpen);
-    // Dispatch a custom event when the pane state changes
-    window.dispatchEvent(new CustomEvent('rightpane-toggle', { detail: { isOpen: !isOpen } }));
+    
+    // Create a custom event that other components can listen for
+    const event = new CustomEvent("rightpane-toggle", { detail: { isOpen: !isOpen } });
+    window.dispatchEvent(event);
   };
+
+  useEffect(() => {
+    // Dispatch the initial state on mount
+    const event = new CustomEvent("rightpane-toggle", { detail: { isOpen } });
+    window.dispatchEvent(event);
+  }, []);
 
   return (
     <div
       className={cn(
-        "fixed top-20 right-0 h-[calc(100vh-5rem)] transition-all duration-300 ease-in-out bg-background border-l border-border shadow-lg z-10",
-        isOpen ? "w-[380px]" : "w-12",
-        className
+        "fixed top-[4rem] bottom-0 right-0 z-20 w-[320px] shrink-0 border-l bg-background transition-all duration-300",
+        isOpen ? "translate-x-0" : "translate-x-full"
       )}
     >
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={togglePane}
-        className="absolute -left-3 top-4 h-8 w-8 rounded-full border bg-background shadow-md z-20"
-        aria-label={isOpen ? "Close right pane" : "Open right pane"}
-      >
-        {isOpen ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-      </Button>
-
-      {/* Always render the content, but control visibility with classes */}
-      <div className={cn("h-full", isOpen ? "opacity-100 visible" : "opacity-0 invisible")}>
-        <TaskAssistant />
+      <div className="absolute -left-10 top-4">
+        <Button 
+          variant="default" 
+          size="icon" 
+          onClick={togglePane}
+          className="h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-md"
+        >
+          <MessageSquare className="h-5 w-5" />
+        </Button>
+      </div>
+      
+      <div className="flex h-full flex-col">
+        <div className="border-b">
+          <div className="flex">
+            <Button
+              variant={activeTab === "assistant" ? "default" : "ghost"}
+              className="flex-1 rounded-none"
+              onClick={() => setActiveTab("assistant")}
+            >
+              AI Assistant
+            </Button>
+            <Button
+              variant={activeTab === "quick-add" ? "default" : "ghost"}
+              className="flex-1 rounded-none"
+              onClick={() => setActiveTab("quick-add")}
+            >
+              Quick Add
+            </Button>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-auto">
+          {activeTab === "assistant" ? (
+            <TaskAssistant />
+          ) : (
+            <TaskFormMini />
+          )}
+        </div>
       </div>
     </div>
   );

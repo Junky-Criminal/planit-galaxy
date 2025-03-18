@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { PlusCircle, X, Plus } from "lucide-react";
+import { PlusCircle, X, Plus, Bell, Link } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -16,24 +17,32 @@ import {
 } from "@/components/ui/select";
 
 const TaskFormMini = () => {
-  const { addTask } = useTaskContext();
+  const { addTask, availableTags, session } = useTaskContext();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     priority: "medium" as PriorityType,
     tags: ["work"] as TagType[],
     timeSlot: "",
+    duration: "",
+    links: "",
     deadline: "",
     scheduledDate: "",
+    notificationsEnabled: false,
+    emailNotification: session?.user?.email || "",
+    notificationTime: "09:00"
   });
   
-  const [availableTags, setAvailableTags] = useState<TagType[]>(["work", "personal", "health", "finance", "education", "social", "home", "other"]);
   const [customTag, setCustomTag] = useState("");
   const [showTagInput, setShowTagInput] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleTagToggle = (tag: TagType) => {
@@ -63,11 +72,6 @@ const TaskFormMini = () => {
       return;
     }
     
-    // If tag doesn't exist in available tags, add it
-    if (!availableTags.includes(normalizedTag)) {
-      setAvailableTags(prev => [...prev, normalizedTag]);
-    }
-    
     setFormData(prev => ({
       ...prev,
       tags: [...prev.tags, normalizedTag]
@@ -84,8 +88,13 @@ const TaskFormMini = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!session) {
+      toast.error("Please log in to add tasks");
+      return;
+    }
     
     if (!formData.title.trim()) {
       toast.error("Please enter a task title");
@@ -97,10 +106,7 @@ const TaskFormMini = () => {
       return;
     }
     
-    addTask({
-      ...formData,
-      notificationsEnabled: false
-    });
+    await addTask(formData);
     
     toast.success("Task added successfully!");
     
@@ -111,10 +117,23 @@ const TaskFormMini = () => {
       priority: "medium",
       tags: ["work"],
       timeSlot: "",
+      duration: "",
+      links: "",
       deadline: "",
       scheduledDate: "",
+      notificationsEnabled: false,
+      emailNotification: session?.user?.email || "",
+      notificationTime: "09:00"
     });
   };
+
+  if (!session) {
+    return (
+      <div className="p-4 h-full flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Please sign in to add tasks</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-2 h-full overflow-hidden">
@@ -247,6 +266,21 @@ const TaskFormMini = () => {
           </div>
         </div>
         
+        <div>
+          <Label htmlFor="mini-links" className="text-xs">Links and Resources</Label>
+          <div className="relative">
+            <Link className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <Input
+              id="mini-links"
+              name="links"
+              value={formData.links}
+              onChange={handleInputChange}
+              placeholder="Resources or URLs"
+              className="h-8 text-sm pl-7"
+            />
+          </div>
+        </div>
+        
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label htmlFor="mini-timeSlot" className="text-xs">Time Slot</Label>
@@ -273,7 +307,52 @@ const TaskFormMini = () => {
           </div>
         </div>
         
-        <Button type="submit" className="w-full h-8 text-sm">Add Task</Button>
+        <div className="pt-1 border-t">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Bell className="h-3 w-3 text-muted-foreground" />
+              <Label className="text-xs">Notifications</Label>
+            </div>
+            <Switch
+              id="mini-notificationsEnabled"
+              checked={formData.notificationsEnabled}
+              onCheckedChange={(checked) => 
+                handleCheckboxChange("notificationsEnabled", checked)
+              }
+              className="scale-75"
+            />
+          </div>
+          
+          {formData.notificationsEnabled && (
+            <div className="grid grid-cols-2 gap-2 mt-2 animate-in slide-in-from-top duration-300">
+              <div>
+                <Label htmlFor="mini-emailNotification" className="text-xs">Email</Label>
+                <Input
+                  id="mini-emailNotification"
+                  type="email"
+                  name="emailNotification"
+                  value={formData.emailNotification}
+                  onChange={handleInputChange}
+                  className="h-8 text-sm"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="mini-notificationTime" className="text-xs">Time</Label>
+                <Input
+                  id="mini-notificationTime"
+                  type="time"
+                  name="notificationTime"
+                  value={formData.notificationTime}
+                  onChange={handleInputChange}
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <Button type="submit" className="w-full h-8 text-sm mt-2">Add Task</Button>
       </form>
     </div>
   );

@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { addDays, isBefore, isAfter, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Define task tag types with their colors
 export type TagType = string;
@@ -20,7 +22,7 @@ export interface Task {
   expectedHours?: string;
   links?: string;
   deadline?: string;
-  scheduledDate?: string; // Added scheduled date field
+  scheduledDate?: string;
   createdAt: Date;
   notificationsEnabled?: boolean;
   emailNotification?: string;
@@ -30,154 +32,330 @@ export interface Task {
 // Define the Task Context interface
 interface TaskContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, "id" | "createdAt" | "completed">) => void;
-  updateTask: (id: string, task: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  toggleTaskCompletion: (id: string) => void;
+  addTask: (task: Omit<Task, "id" | "createdAt" | "completed">) => Promise<void>;
+  updateTask: (id: string, task: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  toggleTaskCompletion: (id: string) => Promise<void>;
   getTasksByStatus: (completed: boolean) => Task[];
   getFilteredTasks: (completed: boolean, dateFilter: string, priorityFilter: PriorityType | "all", tagFilter: TagType | "all") => Task[];
   availableTags: TagType[];
-  addCustomTag: (tag: TagType) => void;
-  removeTag: (tag: TagType) => void;
+  addCustomTag: (tag: TagType) => Promise<void>;
+  removeTag: (tag: TagType) => Promise<void>;
+  isLoading: boolean;
+  session: any;
 }
 
 // Create the context
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
-// Sample initial tasks
-const initialTasks: Task[] = [
-  {
-    id: "1",
-    title: "Study about GNN",
-    description: "Read research papers on GNN and watch yt videos on it.",
-    completed: false,
-    priority: "medium",
-    tags: ["education"],
-    timeSlot: "16:25-17:30",
-    duration: "3.25 hrs",
-    links: "https://example.com/gnn-research",
-    deadline: "2023-09-30",
-    scheduledDate: "2023-09-25", // Added scheduled date
-    createdAt: new Date(),
-    notificationsEnabled: true,
-    emailNotification: "user@example.com",
-    notificationTime: "09:00"
-  },
-  {
-    id: "2",
-    title: "Complete project proposal",
-    description: "Finalize the draft and send it to the team for review.",
-    completed: false,
-    priority: "high",
-    tags: ["work"],
-    timeSlot: "10:00-12:00",
-    duration: "2 hrs",
-    deadline: "2023-09-25",
-    scheduledDate: "2023-09-24", // Added scheduled date
-    createdAt: new Date(),
-    notificationsEnabled: false
-  },
-  {
-    id: "3",
-    title: "Morning run",
-    description: "5km around the park",
-    completed: true,
-    priority: "low",
-    tags: ["health"],
-    timeSlot: "06:30-07:15",
-    duration: "0.75 hrs",
-    scheduledDate: "2023-09-23", // Added scheduled date
-    createdAt: new Date(),
-    notificationsEnabled: true,
-    emailNotification: "user@example.com",
-    notificationTime: "06:00"
-  }
-];
-
-// Initial available tags
-const initialAvailableTags: TagType[] = ["work", "personal", "health", "finance", "education", "social", "home", "other"];
-
 // Provider component
 export function TaskProvider({ children }: { children: React.ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    // Try to load tasks from localStorage
-    const savedTasks = localStorage.getItem("tasks");
-    return savedTasks ? JSON.parse(savedTasks) : initialTasks;
-  });
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [availableTags, setAvailableTags] = useState<TagType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<any>(null);
 
-  const [availableTags, setAvailableTags] = useState<TagType[]>(() => {
-    // Try to load available tags from localStorage
-    const savedTags = localStorage.getItem("availableTags");
-    return savedTags ? JSON.parse(savedTags) : initialAvailableTags;
-  });
-
-  // Save tasks to localStorage whenever they change
+  // Check for user session on mount
   useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
 
-  // Save available tags to localStorage whenever they change
+      // Set up auth state change listener
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          setSession(session);
+          if (session) {
+            fetchTasks();
+            fetchTags();
+          } else {
+            setTasks([]);
+            setAvailableTags([]);
+          }
+        }
+      );
+
+      return () => {
+        authListener.subscription.unsubscribe();
+      };
+    };
+
+    getSession();
+  }, []);
+
+  // Fetch tasks when the session changes
   useEffect(() => {
-    localStorage.setItem("availableTags", JSON.stringify(availableTags));
-  }, [availableTags]);
+    if (session) {
+      fetchTasks();
+      fetchTags();
+    }
+  }, [session]);
+
+  // Fetch tasks from Supabase
+  const fetchTasks = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const parsedTasks: Task[] = data.map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description || undefined,
+          completed: task.completed,
+          priority: task.priority as PriorityType,
+          tags: task.tags || [],
+          timeSlot: task.time_slot,
+          duration: task.duration,
+          expectedHours: task.expected_hours,
+          links: task.links,
+          deadline: task.deadline,
+          scheduledDate: task.scheduled_date,
+          createdAt: new Date(task.created_at),
+          notificationsEnabled: task.notifications_enabled,
+          emailNotification: task.email_notification,
+          notificationTime: task.notification_time
+        }));
+        setTasks(parsedTasks);
+      }
+    } catch (error: any) {
+      console.error("Error fetching tasks:", error.message);
+      toast.error("Failed to load tasks");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch tags from Supabase
+  const fetchTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_tags")
+        .select("tag");
+
+      if (error) throw error;
+
+      if (data) {
+        const tags = data.map(item => item.tag);
+        // Add default tags if the user has no tags yet
+        if (tags.length === 0) {
+          const defaultTags = ["work", "personal", "health", "finance", "education", "social", "home", "other"];
+          await Promise.all(defaultTags.map(tag => addCustomTag(tag)));
+          setAvailableTags(defaultTags);
+        } else {
+          setAvailableTags(tags);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error fetching tags:", error.message);
+      toast.error("Failed to load tags");
+    }
+  };
 
   // Add a new task
-  const addTask = (taskData: Omit<Task, "id" | "createdAt" | "completed">) => {
-    const newTask: Task = {
-      ...taskData,
-      id: Date.now().toString(),
-      completed: false,
-      createdAt: new Date()
-    };
-    setTasks((prevTasks) => [...prevTasks, newTask]);
+  const addTask = async (taskData: Omit<Task, "id" | "createdAt" | "completed">) => {
+    if (!session) {
+      toast.error("You must be logged in to add tasks");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert({
+          user_id: session.user.id,
+          title: taskData.title,
+          description: taskData.description,
+          priority: taskData.priority,
+          tags: taskData.tags,
+          time_slot: taskData.timeSlot,
+          duration: taskData.duration,
+          expected_hours: taskData.expectedHours,
+          links: taskData.links,
+          deadline: taskData.deadline,
+          scheduled_date: taskData.scheduledDate,
+          notifications_enabled: taskData.notificationsEnabled,
+          email_notification: taskData.emailNotification,
+          notification_time: taskData.notificationTime
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const newTask: Task = {
+          id: data.id,
+          title: data.title,
+          description: data.description || undefined,
+          completed: data.completed,
+          priority: data.priority as PriorityType,
+          tags: data.tags || [],
+          timeSlot: data.time_slot,
+          duration: data.duration,
+          expectedHours: data.expected_hours,
+          links: data.links,
+          deadline: data.deadline,
+          scheduledDate: data.scheduled_date,
+          createdAt: new Date(data.created_at),
+          notificationsEnabled: data.notifications_enabled,
+          emailNotification: data.email_notification,
+          notificationTime: data.notification_time
+        };
+        
+        setTasks(prevTasks => [newTask, ...prevTasks]);
+        
+        // Schedule notification if enabled
+        if (newTask.notificationsEnabled && newTask.emailNotification && newTask.notificationTime) {
+          // This would typically call a function to schedule the notification
+          console.log(`Notification scheduled for task ${newTask.id} at ${newTask.notificationTime}`);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error adding task:", error.message);
+      toast.error("Failed to add task");
+    }
   };
 
   // Update an existing task
-  const updateTask = (id: string, taskData: Partial<Task>) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === id ? { ...task, ...taskData } : task
-      )
-    );
+  const updateTask = async (id: string, taskData: Partial<Task>) => {
+    if (!session) {
+      toast.error("You must be logged in to update tasks");
+      return;
+    }
+
+    try {
+      const updateData: any = {};
+      
+      if (taskData.title !== undefined) updateData.title = taskData.title;
+      if (taskData.description !== undefined) updateData.description = taskData.description;
+      if (taskData.completed !== undefined) updateData.completed = taskData.completed;
+      if (taskData.priority !== undefined) updateData.priority = taskData.priority;
+      if (taskData.tags !== undefined) updateData.tags = taskData.tags;
+      if (taskData.timeSlot !== undefined) updateData.time_slot = taskData.timeSlot;
+      if (taskData.duration !== undefined) updateData.duration = taskData.duration;
+      if (taskData.expectedHours !== undefined) updateData.expected_hours = taskData.expectedHours;
+      if (taskData.links !== undefined) updateData.links = taskData.links;
+      if (taskData.deadline !== undefined) updateData.deadline = taskData.deadline;
+      if (taskData.scheduledDate !== undefined) updateData.scheduled_date = taskData.scheduledDate;
+      if (taskData.notificationsEnabled !== undefined) updateData.notifications_enabled = taskData.notificationsEnabled;
+      if (taskData.emailNotification !== undefined) updateData.email_notification = taskData.emailNotification;
+      if (taskData.notificationTime !== undefined) updateData.notification_time = taskData.notificationTime;
+
+      const { error } = await supabase
+        .from("tasks")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === id ? { ...task, ...taskData } : task
+        )
+      );
+      
+      // Update notification if enabled/changed
+      const updatedTask = tasks.find(task => task.id === id);
+      if (updatedTask && updatedTask.notificationsEnabled && updatedTask.emailNotification && updatedTask.notificationTime) {
+        // This would typically call a function to update the notification
+        console.log(`Notification updated for task ${id} at ${updatedTask.notificationTime}`);
+      }
+    } catch (error: any) {
+      console.error("Error updating task:", error.message);
+      toast.error("Failed to update task");
+    }
   };
 
   // Delete a task
-  const deleteTask = (id: string) => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+  const deleteTask = async (id: string) => {
+    if (!session) {
+      toast.error("You must be logged in to delete tasks");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+    } catch (error: any) {
+      console.error("Error deleting task:", error.message);
+      toast.error("Failed to delete task");
+    }
   };
 
   // Toggle task completion status
-  const toggleTaskCompletion = (id: string) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const toggleTaskCompletion = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      await updateTask(id, { completed: !task.completed });
+    }
   };
 
   // Add a custom tag to available tags
-  const addCustomTag = (tag: TagType) => {
+  const addCustomTag = async (tag: TagType) => {
+    if (!session) {
+      toast.error("You must be logged in to add tags");
+      return;
+    }
+
     if (!availableTags.includes(tag)) {
-      setAvailableTags(prev => [...prev, tag]);
+      try {
+        const { error } = await supabase
+          .from("user_tags")
+          .insert({
+            user_id: session.user.id,
+            tag: tag
+          });
+
+        if (error) throw error;
+
+        setAvailableTags(prev => [...prev, tag]);
+      } catch (error: any) {
+        console.error("Error adding tag:", error.message);
+        toast.error("Failed to add tag");
+      }
     }
   };
 
   // Remove a tag from available tags
-  const removeTag = (tag: TagType) => {
-    setAvailableTags(prev => prev.filter(t => t !== tag));
-    
-    // Update any tasks that have this tag
-    setTasks(prevTasks => 
-      prevTasks.map(task => {
-        if (task.tags.includes(tag)) {
-          return {
-            ...task,
-            tags: task.tags.filter(t => t !== tag)
-          };
-        }
-        return task;
-      })
-    );
+  const removeTag = async (tag: TagType) => {
+    if (!session) {
+      toast.error("You must be logged in to remove tags");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("user_tags")
+        .delete()
+        .eq("tag", tag);
+
+      if (error) throw error;
+
+      setAvailableTags(prev => prev.filter(t => t !== tag));
+      
+      // Update any tasks that have this tag
+      const tasksToUpdate = tasks.filter(task => task.tags.includes(tag));
+      
+      for (const task of tasksToUpdate) {
+        const updatedTags = task.tags.filter(t => t !== tag);
+        await updateTask(task.id, { tags: updatedTags });
+      }
+    } catch (error: any) {
+      console.error("Error removing tag:", error.message);
+      toast.error("Failed to remove tag");
+    }
   };
 
   // Get tasks by completion status
@@ -245,7 +423,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         getFilteredTasks,
         availableTags,
         addCustomTag,
-        removeTag
+        removeTag,
+        isLoading,
+        session
       }}
     >
       {children}
