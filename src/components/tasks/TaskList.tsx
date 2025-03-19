@@ -39,6 +39,29 @@ const TaskList = ({
     };
   }, []);
 
+  // Add error boundary to safely render tasks even if some have issues
+  const safeRenderTasks = () => {
+    try {
+      return tasks.map((task) => (
+        <TaskCard
+          key={task.id}
+          task={{
+            ...task,
+            tag: task.tag || "other" // Ensure tag is never null
+          }}
+          onToggleCompletion={toggleTaskCompletion}
+        />
+      ));
+    } catch (error) {
+      console.error("Error rendering tasks:", error);
+      return (
+        <div className="col-span-2 text-center py-10">
+          <p className="text-red-500">Error displaying tasks. Please try refreshing the page.</p>
+        </div>
+      );
+    }
+  };
+
   return (
     <div 
       className={cn(
@@ -57,13 +80,7 @@ const TaskList = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onToggleCompletion={toggleTaskCompletion}
-            />
-          ))}
+          {safeRenderTasks()}
         </div>
       )}
     </div>

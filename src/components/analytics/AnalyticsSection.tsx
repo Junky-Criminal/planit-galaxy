@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useTaskContext, TagType } from "@/context/TaskContext";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -15,10 +16,11 @@ const AnalyticsSection = ({ className }: AnalyticsSectionProps) => {
     const distribution: Record<string, number> = {};
     
     tasks.forEach((task) => {
-      if (distribution[task.tag]) {
-        distribution[task.tag]++;
+      const tagName = task.tag || "other"; // Use "other" as fallback if tag is null
+      if (distribution[tagName]) {
+        distribution[tagName]++;
       } else {
-        distribution[task.tag] = 1;
+        distribution[tagName] = 1;
       }
     });
     

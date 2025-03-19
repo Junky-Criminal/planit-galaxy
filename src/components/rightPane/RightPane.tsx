@@ -24,6 +24,20 @@ const RightPane = () => {
     window.dispatchEvent(event);
   }, []);
 
+  // Wrap the tab content in an error boundary
+  const renderTabContent = () => {
+    try {
+      return activeTab === "assistant" ? <TaskAssistant /> : <TaskFormMini />;
+    } catch (error) {
+      console.error("Error rendering tab content:", error);
+      return (
+        <div className="p-4 text-red-500">
+          Error displaying content. Please try refreshing the page.
+        </div>
+      );
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -63,11 +77,7 @@ const RightPane = () => {
         </div>
         
         <div className="flex-1 overflow-auto">
-          {activeTab === "assistant" ? (
-            <TaskAssistant />
-          ) : (
-            <TaskFormMini />
-          )}
+          {renderTabContent()}
         </div>
       </div>
     </div>

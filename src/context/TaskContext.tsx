@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { addDays, isBefore, isAfter, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,7 +134,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           description: task.description || undefined,
           completed: task.completed,
           priority: task.priority as PriorityType,
-          tag: task.tags && task.tags.length > 0 ? task.tags[0] : "other", // Use first tag from array or default to "other"
+          tag: (task.tags && task.tags.length > 0 && task.tags[0]) ? task.tags[0] : "other", // Handle null tags
           timeSlot: task.time_slot,
           duration: task.duration,
           expectedHours: task.expected_hours,
