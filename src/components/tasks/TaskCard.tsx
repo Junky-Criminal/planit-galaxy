@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Task, PriorityType, useTaskContext, getTagCardColor } from "@/context/TaskContext";
 import TagBadge from "@/components/tasks/TagBadge";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,22 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
     emailNotification: task.emailNotification || "",
     notificationTime: task.notificationTime || "09:00",
   });
+  const [rightPanePosition, setRightPanePosition] = useState(320); // Default width
+
+  // Listen for the rightpane-toggle event to adjust position
+  useEffect(() => {
+    const handleRightPaneToggle = (event: CustomEvent<{isOpen: boolean}>) => {
+      setRightPanePosition(event.detail.isOpen ? 320 : 0);
+    };
+    
+    // Add event listener with type assertion
+    window.addEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
+    };
+  }, []);
 
   const getDeadlineStatus = () => {
     if (!task.deadline) return "";
@@ -201,7 +217,14 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
           </Button>
           
           <Dialog open={isEditingNotifications} onOpenChange={setIsEditingNotifications}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent 
+              className="sm:max-w-[425px]"
+              style={{
+                marginRight: `${rightPanePosition}px`,
+                transform: `translate(-${rightPanePosition / 2}px, -50%)`,
+                left: `calc(50% - ${rightPanePosition / 2}px)`
+              }}
+            >
               <DialogHeader>
                 <DialogTitle>Notification Settings</DialogTitle>
               </DialogHeader>

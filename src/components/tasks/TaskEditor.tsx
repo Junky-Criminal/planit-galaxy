@@ -39,6 +39,7 @@ const TaskEditor = ({ task, isOpen, onClose }: TaskEditorProps) => {
     links: task.links || "",
     deadline: task.deadline || "",
   });
+  const [rightPanePosition, setRightPanePosition] = useState(320); // Default width
 
   // Update form when task changes
   useEffect(() => {
@@ -52,6 +53,21 @@ const TaskEditor = ({ task, isOpen, onClose }: TaskEditorProps) => {
       deadline: task.deadline || "",
     });
   }, [task]);
+  
+  // Listen for the rightpane-toggle event to adjust position
+  useEffect(() => {
+    const handleRightPaneToggle = (event: CustomEvent<{isOpen: boolean}>) => {
+      setRightPanePosition(event.detail.isOpen ? 320 : 0);
+    };
+    
+    // Add event listener with type assertion
+    window.addEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
+    };
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -95,7 +111,14 @@ const TaskEditor = ({ task, isOpen, onClose }: TaskEditorProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-md"
+        style={{
+          marginRight: `${rightPanePosition}px`,
+          transform: `translate(-${rightPanePosition / 2}px, -50%)`,
+          left: `calc(50% - ${rightPanePosition / 2}px)`
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
