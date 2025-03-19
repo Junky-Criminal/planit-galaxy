@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Task, PriorityType, useTaskContext, getTagCardColor } from "@/context/TaskContext";
 import TagBadge from "@/components/tasks/TagBadge";
@@ -28,16 +27,13 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
   });
   const [rightPanePosition, setRightPanePosition] = useState(320); // Default width
 
-  // Listen for the rightpane-toggle event to adjust position
   useEffect(() => {
     const handleRightPaneToggle = (event: CustomEvent<{isOpen: boolean}>) => {
       setRightPanePosition(event.detail.isOpen ? 320 : 0);
     };
     
-    // Add event listener with type assertion
     window.addEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
     
-    // Cleanup
     return () => {
       window.removeEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
     };
@@ -53,7 +49,6 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
       return "text-red-500";
     }
     
-    // Check if deadline is within 2 days
     const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
     if (deadline.getTime() - now.getTime() < twoDaysInMs) {
       return "text-amber-500";
@@ -77,7 +72,6 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
 
   const handleNotificationToggle = async () => {
     if (!notificationData.notificationsEnabled && !notificationData.emailNotification) {
-      // If enabling notifications but no email is set, open the dialog
       setIsEditingNotifications(true);
       return;
     }
@@ -113,7 +107,6 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
     toast.success("Notification settings updated");
   };
 
-  // Get tag-based card background color
   const tagCardColor = getTagCardColor(task.tag);
 
   return (
@@ -279,7 +272,6 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
         </div>
       </div>
       
-      {/* Task Editor Dialog */}
       <TaskEditor
         task={task}
         isOpen={isEditingTask}
