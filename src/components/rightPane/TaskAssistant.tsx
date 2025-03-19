@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +7,6 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 
-// Add TypeScript declarations for the Web Speech API
 interface Window {
   SpeechRecognition: any;
   webkitSpeechRecognition: any;
@@ -23,14 +21,13 @@ interface TaskSummary {
   title: string;
   description: string;
   priority: string;
-  tags: string[];
+  tag: string;
   timeSlot?: string;
   duration?: string;
   deadline?: string;
-  scheduledDate?: string; // Added scheduled date field
+  scheduledDate?: string;
 }
 
-// The system prompt for the assistant
 const SYSTEM_PROMPT = `You are an intelligent task management assistant integrated into a productivity tool. Your role is to assist users in creating tasks by extracting structured details from their inputs (provided via text or voice) and presenting them in a clear tabular summary for review. Follow these instructions:
 
 1. **Task Title and Description**:
@@ -43,7 +40,7 @@ const SYSTEM_PROMPT = `You are an intelligent task management assistant integrat
      - **Duration**: Estimated time required to complete the task.
      - **Deadline**: Specific date and/or time mentioned by the user for task completion.
      - **Scheduled Date**: The date when the task is scheduled to be performed (might differ from deadline).
-     - **Tags**: Categorize the task into one or more user-defined tags (e.g., "Work," "Personal," "Education").
+     - **Tag**: Categorize the task into one or more user-defined tags (e.g., "Work," "Personal," "Education").
    - If any attribute is missing or ambiguous, make reasonable assumptions based on the context.
 
 3. **Output Format**:
@@ -51,7 +48,7 @@ const SYSTEM_PROMPT = `You are an intelligent task management assistant integrat
      - Title: [Task Title]
      - Description: [Description]
      - Priority: [high/medium/low]
-     - Tags: [comma-separated list]
+     - Tag: [comma-separated list]
      - Time Slot: [specific time slot if mentioned]
      - Duration: [estimated duration if mentioned]
      - Deadline: [deadline if mentioned]
@@ -82,7 +79,6 @@ const TaskAssistant = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll to bottom on new messages
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
@@ -91,14 +87,12 @@ const TaskAssistant = () => {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    // Add user message
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsProcessing(true);
 
     try {
-      // Call the Edge Function to process the message with Gemini
       const allMessages = [...messages, userMessage];
       const { data, error } = await supabase.functions.invoke('gemini-task-assistant', {
         body: {
@@ -118,7 +112,6 @@ const TaskAssistant = () => {
 
       console.log("Response from Edge Function:", data);
 
-      // Add the assistant response
       const assistantMessage: Message = {
         role: "assistant",
         content: data.generatedText || "I'm having trouble understanding that. Could you try again?"
@@ -126,7 +119,6 @@ const TaskAssistant = () => {
       
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Set task summary if available
       if (data.taskSummary) {
         console.log("Setting task summary:", data.taskSummary);
         setTaskSummary(data.taskSummary);
@@ -137,7 +129,6 @@ const TaskAssistant = () => {
       console.error('Error calling Gemini API:', error);
       toast.error("Failed to process your request. Please try again.");
       
-      // Add error message
       setMessages(prev => [
         ...prev,
         {
@@ -157,7 +148,7 @@ const TaskAssistant = () => {
       title: taskSummary.title,
       description: taskSummary.description,
       priority: taskSummary.priority as any,
-      tags: taskSummary.tags as any,
+      tag: taskSummary.tag,
       timeSlot: taskSummary.timeSlot,
       duration: taskSummary.duration,
       deadline: taskSummary.deadline,
@@ -167,7 +158,6 @@ const TaskAssistant = () => {
     
     toast.success("Task created successfully!");
     
-    // Reset the summary and add a confirmation message
     setTaskSummary(null);
     setMessages(prev => [
       ...prev, 
@@ -183,7 +173,6 @@ const TaskAssistant = () => {
   };
 
   const handleVoiceInput = () => {
-    // Check if browser supports speech recognition
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       toast.error("Voice input not supported in this browser.");
       return;
@@ -192,12 +181,10 @@ const TaskAssistant = () => {
     setIsRecording(prev => !prev);
 
     if (isRecording) {
-      // If already recording, stop recording
       return;
     }
 
     try {
-      // Use type assertion to help TypeScript recognize these properties
       const SpeechRecognitionAPI = (window as any).SpeechRecognition || 
                                   (window as any).webkitSpeechRecognition;
       
@@ -287,8 +274,8 @@ const TaskAssistant = () => {
                     <td className="capitalize">{taskSummary.priority}</td>
                   </tr>
                   <tr>
-                    <td className="font-medium pr-2">Tags:</td>
-                    <td>{taskSummary.tags.join(", ")}</td>
+                    <td className="font-medium pr-2">Tag:</td>
+                    <td>{taskSummary.tag}</td>
                   </tr>
                   {taskSummary.timeSlot && (
                     <tr>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -34,7 +33,7 @@ const LeftPane = () => {
     title: "",
     description: "",
     priority: "medium" as PriorityType,
-    tags: ["work"] as TagType[],
+    tag: "work" as TagType,
     timeSlot: "",
     duration: "",
     links: "",
@@ -58,18 +57,11 @@ const LeftPane = () => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleTagToggle = (tag: TagType) => {
-    setFormData((prev) => {
-      const currentTags = [...prev.tags];
-      
-      if (currentTags.includes(tag)) {
-        // Remove tag if it exists
-        return { ...prev, tags: currentTags.filter(t => t !== tag) };
-      } else {
-        // Add tag if it doesn't exist
-        return { ...prev, tags: [...currentTags, tag] };
-      }
-    });
+  const handleTagSelect = (tag: TagType) => {
+    setFormData(prev => ({
+      ...prev,
+      tag
+    }));
   };
   
   const handleAddCustomTag = () => {
@@ -79,29 +71,17 @@ const LeftPane = () => {
     
     const normalizedTag = customTag.toLowerCase().trim() as TagType;
     
-    // Check if tag is already selected
-    if (formData.tags.includes(normalizedTag)) {
-      toast.info("This tag is already added");
-      return;
-    }
-    
     // Add to available tags if not already there
     addCustomTag(normalizedTag);
     
+    // Set as the selected tag
     setFormData(prev => ({
       ...prev,
-      tags: [...prev.tags, normalizedTag]
+      tag: normalizedTag
     }));
     
     setCustomTag("");
     setShowTagInput(false);
-  };
-  
-  const handleRemoveTag = (tag: TagType) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
-    }));
   };
 
   const handleDeleteTag = () => {
@@ -125,11 +105,6 @@ const LeftPane = () => {
       return;
     }
     
-    if (formData.tags.length === 0) {
-      toast.error("Please add at least one tag");
-      return;
-    }
-    
     await addTask(formData);
     
     toast.success("Task added successfully!");
@@ -139,7 +114,7 @@ const LeftPane = () => {
       title: "",
       description: "",
       priority: "medium",
-      tags: ["work"],
+      tag: "work",
       timeSlot: "",
       duration: "",
       links: "",
@@ -230,7 +205,7 @@ const LeftPane = () => {
           
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="tags">Tags</Label>
+              <Label htmlFor="tag">Tag</Label>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -273,34 +248,17 @@ const LeftPane = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {formData.tags.map(tag => (
-                <Badge 
-                  key={tag} 
-                  variant="secondary"
-                  className="flex items-center gap-1 px-2 py-1"
-                >
-                  {tag}
-                  <button 
-                    type="button" 
-                    onClick={() => handleRemoveTag(tag)}
-                    className="rounded-full hover:bg-muted p-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
             
             <div className="space-y-2">
               {!showTagInput ? (
                 <div className="flex gap-2">
                   <Select
+                    value={formData.tag}
                     onValueChange={(value: string) => {
                       if (value === "custom") {
                         setShowTagInput(true);
                       } else if (value) {
-                        handleTagToggle(value as TagType);
+                        handleTagSelect(value as TagType);
                       }
                     }}
                   >
@@ -308,12 +266,10 @@ const LeftPane = () => {
                       <SelectValue placeholder="Select a tag" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableTags
-                        .filter(tag => !formData.tags.includes(tag))
-                        .map(tag => (
-                          <SelectItem key={tag} value={tag}>
-                            {tag}
-                          </SelectItem>
+                      {availableTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>
+                          {tag}
+                        </SelectItem>
                       ))}
                       <SelectItem value="custom">+ Add custom tag</SelectItem>
                     </SelectContent>

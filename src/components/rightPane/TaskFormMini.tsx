@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useTaskContext, TagType, PriorityType } from "@/context/TaskContext";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ const TaskFormMini = () => {
     title: "",
     description: "",
     priority: "medium" as PriorityType,
-    tags: ["work"] as TagType[],
+    tag: "work" as TagType,
     timeSlot: "",
     duration: "",
     links: "",
@@ -45,18 +44,11 @@ const TaskFormMini = () => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleTagToggle = (tag: TagType) => {
-    setFormData((prev) => {
-      const currentTags = [...prev.tags];
-      
-      if (currentTags.includes(tag)) {
-        // Remove tag if it exists
-        return { ...prev, tags: currentTags.filter(t => t !== tag) };
-      } else {
-        // Add tag if it doesn't exist
-        return { ...prev, tags: [...currentTags, tag] };
-      }
-    });
+  const handleTagSelect = (tag: TagType) => {
+    setFormData(prev => ({
+      ...prev,
+      tag
+    }));
   };
   
   const handleAddCustomTag = () => {
@@ -66,26 +58,13 @@ const TaskFormMini = () => {
     
     const normalizedTag = customTag.toLowerCase().trim() as TagType;
     
-    // Check if tag is already selected
-    if (formData.tags.includes(normalizedTag)) {
-      toast.info("This tag is already added");
-      return;
-    }
-    
     setFormData(prev => ({
       ...prev,
-      tags: [...prev.tags, normalizedTag]
+      tag: normalizedTag
     }));
     
     setCustomTag("");
     setShowTagInput(false);
-  };
-  
-  const handleRemoveTag = (tag: TagType) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,11 +80,6 @@ const TaskFormMini = () => {
       return;
     }
     
-    if (formData.tags.length === 0) {
-      toast.error("Please add at least one tag");
-      return;
-    }
-    
     await addTask(formData);
     
     toast.success("Task added successfully!");
@@ -115,7 +89,7 @@ const TaskFormMini = () => {
       title: "",
       description: "",
       priority: "medium",
-      tags: ["work"],
+      tag: "work",
       timeSlot: "",
       duration: "",
       links: "",
@@ -185,34 +159,16 @@ const TaskFormMini = () => {
         </div>
         
         <div>
-          <Label htmlFor="mini-tags" className="text-xs">Tags</Label>
-          <div className="flex flex-wrap gap-1 mb-1">
-            {formData.tags.map(tag => (
-              <Badge 
-                key={tag} 
-                variant="secondary"
-                className="flex items-center gap-1 px-1.5 py-0.5 text-xs"
-              >
-                {tag}
-                <button 
-                  type="button" 
-                  onClick={() => handleRemoveTag(tag)}
-                  className="rounded-full hover:bg-muted p-0.5"
-                >
-                  <X className="h-2 w-2" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-          
+          <Label htmlFor="mini-tag" className="text-xs">Tag</Label>
           <div className="space-y-1">
             {!showTagInput ? (
               <Select
+                value={formData.tag}
                 onValueChange={(value: string) => {
                   if (value === "custom") {
                     setShowTagInput(true);
                   } else if (value) {
-                    handleTagToggle(value as TagType);
+                    handleTagSelect(value as TagType);
                   }
                 }}
               >
@@ -220,12 +176,10 @@ const TaskFormMini = () => {
                   <SelectValue placeholder="Select tag" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTags
-                    .filter(tag => !formData.tags.includes(tag))
-                    .map(tag => (
-                      <SelectItem key={tag} value={tag} className="text-xs">
-                        {tag}
-                      </SelectItem>
+                  {availableTags.map(tag => (
+                    <SelectItem key={tag} value={tag} className="text-xs">
+                      {tag}
+                    </SelectItem>
                   ))}
                   <SelectItem value="custom" className="text-xs">+ Add custom tag</SelectItem>
                 </SelectContent>
