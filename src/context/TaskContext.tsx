@@ -16,7 +16,7 @@ export interface Task {
   description?: string;
   completed: boolean;
   priority: PriorityType;
-  tags: TagType[];
+  tag: TagType; // Changed from tags array to single tag
   timeSlot?: string;
   duration?: string;
   expectedHours?: string;
@@ -135,7 +135,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           description: task.description || undefined,
           completed: task.completed,
           priority: task.priority as PriorityType,
-          tags: task.tags || [],
+          tag: task.tags && task.tags.length > 0 ? task.tags[0] : "other", // Use first tag from array or default to "other"
           timeSlot: task.time_slot,
           duration: task.duration,
           expectedHours: task.expected_hours,
@@ -198,7 +198,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           title: taskData.title,
           description: taskData.description,
           priority: taskData.priority,
-          tags: taskData.tags,
+          tags: [taskData.tag], // Store single tag in tags array for backward compatibility
           time_slot: taskData.timeSlot,
           duration: taskData.duration,
           expected_hours: taskData.expectedHours,
@@ -221,7 +221,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           description: data.description || undefined,
           completed: data.completed,
           priority: data.priority as PriorityType,
-          tags: data.tags || [],
+          tag: data.tags && data.tags.length > 0 ? data.tags[0] : "other", // Use first tag from array
           timeSlot: data.time_slot,
           duration: data.duration,
           expectedHours: data.expected_hours,
@@ -262,7 +262,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (taskData.description !== undefined) updateData.description = taskData.description;
       if (taskData.completed !== undefined) updateData.completed = taskData.completed;
       if (taskData.priority !== undefined) updateData.priority = taskData.priority;
-      if (taskData.tags !== undefined) updateData.tags = taskData.tags;
+      if (taskData.tag !== undefined) updateData.tags = [taskData.tag]; // Store single tag in tags array
       if (taskData.timeSlot !== undefined) updateData.time_slot = taskData.timeSlot;
       if (taskData.duration !== undefined) updateData.duration = taskData.duration;
       if (taskData.expectedHours !== undefined) updateData.expected_hours = taskData.expectedHours;
@@ -372,11 +372,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setAvailableTags(prev => prev.filter(t => t !== tag));
       
       // Update any tasks that have this tag
-      const tasksToUpdate = tasks.filter(task => task.tags.includes(tag));
+      const tasksToUpdate = tasks.filter(task => task.tag === tag);
       
       for (const task of tasksToUpdate) {
-        const updatedTags = task.tags.filter(t => t !== tag);
-        await updateTask(task.id, { tags: updatedTags });
+        await updateTask(task.id, { tag: "other" });
       }
     } catch (error: any) {
       console.error("Error removing tag:", error.message);
@@ -406,7 +405,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
       
       // Filter by tag
-      if (tagFilter !== "all" && !task.tags.includes(tagFilter)) return false;
+      if (tagFilter !== "all" && task.tag !== tagFilter) return false;
       
       // Filter by date
       if (dateFilter !== "all") {
@@ -470,19 +469,42 @@ export function useTaskContext() {
 
 // Export the tag colors mapping
 export const tagColors: Record<string, string> = {
-  work: "tag-blue",
-  personal: "tag-purple",
-  health: "tag-green",
-  finance: "tag-yellow",
-  education: "tag-orange",
-  social: "tag-pink",
-  home: "tag-teal",
-  other: "tag-gray"
+  work: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  personal: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+  health: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  finance: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  education: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  social: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300",
+  home: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+  other: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
 };
 
-// Map tag types to colors - now we need a more flexible approach since we support custom tags
-export const getTagColor = (tag: string): string => {
-  return tagColors[tag] || "tag-gray"; // Return "tag-gray" for unknown tags
+// Get tag background color for card background
+export const getTagCardColor = (tag: string): string => {
+  switch (tag) {
+    case "work":
+      return "bg-blue-50 dark:bg-blue-950";
+    case "personal":
+      return "bg-purple-50 dark:bg-purple-950";
+    case "health":
+      return "bg-green-50 dark:bg-green-950";
+    case "finance":
+      return "bg-yellow-50 dark:bg-yellow-950";
+    case "education":
+      return "bg-orange-50 dark:bg-orange-950";
+    case "social":
+      return "bg-pink-50 dark:bg-pink-950";
+    case "home":
+      return "bg-teal-50 dark:bg-teal-950";
+    case "other":
+    default:
+      return "bg-gray-50 dark:bg-gray-900";
+  }
+};
+
+// Get tag styles for tag badges
+export const getTagStyles = (tag: string): string => {
+  return tagColors[tag] || tagColors.other;
 };
 
 // Map priority to colors

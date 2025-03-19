@@ -1,15 +1,16 @@
 
 import React, { useState } from "react";
-import { Task, PriorityType, useTaskContext } from "@/context/TaskContext";
+import { Task, PriorityType, useTaskContext, getTagCardColor } from "@/context/TaskContext";
 import TagBadge from "@/components/tasks/TagBadge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Calendar, Clock, Link, Bell, BellOff } from "lucide-react";
+import { Calendar, Clock, Link, Bell, BellOff, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import TaskEditor from "./TaskEditor";
 
 interface TaskCardProps {
   task: Task;
@@ -18,7 +19,8 @@ interface TaskCardProps {
 
 const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
   const { updateTask } = useTaskContext();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingNotifications, setIsEditingNotifications] = useState(false);
+  const [isEditingTask, setIsEditingTask] = useState(false);
   const [notificationData, setNotificationData] = useState({
     notificationsEnabled: task.notificationsEnabled || false,
     emailNotification: task.emailNotification || "",
@@ -60,7 +62,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
   const handleNotificationToggle = async () => {
     if (!notificationData.notificationsEnabled && !notificationData.emailNotification) {
       // If enabling notifications but no email is set, open the dialog
-      setIsEditing(true);
+      setIsEditingNotifications(true);
       return;
     }
     
@@ -91,13 +93,17 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
       notificationTime: notificationData.notificationTime
     });
     
-    setIsEditing(false);
+    setIsEditingNotifications(false);
     toast.success("Notification settings updated");
   };
 
+  // Get tag-based card background color
+  const tagCardColor = getTagCardColor(task.tag);
+
   return (
     <div className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-300",
+      "rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-300",
+      tagCardColor,
       task.completed && "opacity-70"
     )}>
       <div className="p-4 space-y-3">
@@ -127,18 +133,25 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
             </div>
           </div>
           
-          <div className="flex-shrink-0">
+          <div className="flex items-center gap-2">
             <div className={cn(
               "h-3 w-3 rounded-full",
               getPriorityColor(task.priority)
             )} />
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setIsEditingTask(true)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-1 pt-1">
-          {task.tags.map((tag) => (
-            <TagBadge key={tag} tag={tag} />
-          ))}
+        <div className="pt-1">
+          <TagBadge tag={task.tag} />
         </div>
         
         <div className="grid grid-cols-2 gap-2 pt-1 text-xs text-muted-foreground">
@@ -187,17 +200,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
             {notificationData.notificationsEnabled ? "Notifications On" : "Notifications Off"}
           </Button>
           
-          <Dialog open={isEditing} onOpenChange={setIsEditing}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit Notifications
-              </Button>
-            </DialogTrigger>
+          <Dialog open={isEditingNotifications} onOpenChange={setIsEditingNotifications}>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Notification Settings</DialogTitle>
@@ -244,7 +247,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
                 )}
                 
                 <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+                  <Button variant="outline" onClick={() => setIsEditingNotifications(false)}>Cancel</Button>
                   <Button onClick={handleSaveNotifications}>Save</Button>
                 </div>
               </div>
@@ -252,6 +255,13 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
           </Dialog>
         </div>
       </div>
+      
+      {/* Task Editor Dialog */}
+      <TaskEditor
+        task={task}
+        isOpen={isEditingTask}
+        onClose={() => setIsEditingTask(false)}
+      />
     </div>
   );
 };
