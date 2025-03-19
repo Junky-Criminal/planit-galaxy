@@ -60,10 +60,8 @@ const TaskEditor = ({ task, isOpen, onClose }: TaskEditorProps) => {
       setRightPanePosition(event.detail.isOpen ? 320 : 0);
     };
     
-    // Add event listener with type assertion
     window.addEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
     
-    // Cleanup
     return () => {
       window.removeEventListener('rightpane-toggle', handleRightPaneToggle as EventListener);
     };
@@ -112,7 +110,7 @@ const TaskEditor = ({ task, isOpen, onClose }: TaskEditorProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="sm:max-w-md"
+        className="sm:max-w-[400px] w-[90vw] max-h-[90vh] overflow-y-auto"
         style={{
           marginRight: `${rightPanePosition}px`,
           transform: `translate(-${rightPanePosition / 2}px, -50%)`,
@@ -123,7 +121,7 @@ const TaskEditor = ({ task, isOpen, onClose }: TaskEditorProps) => {
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2">
           <div className="space-y-2">
             <label className="text-sm font-medium">Title</label>
             <Input
@@ -141,7 +139,7 @@ const TaskEditor = ({ task, isOpen, onClose }: TaskEditorProps) => {
               value={formData.description}
               onChange={handleInputChange}
               placeholder="Task description"
-              rows={3}
+              rows={2}
             />
           </div>
 

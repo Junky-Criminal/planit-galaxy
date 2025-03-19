@@ -211,7 +211,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
           
           <Dialog open={isEditingNotifications} onOpenChange={setIsEditingNotifications}>
             <DialogContent 
-              className="sm:max-w-[425px]"
+              className="sm:max-w-[400px] w-[90vw] max-h-[80vh] overflow-y-auto"
               style={{
                 marginRight: `${rightPanePosition}px`,
                 transform: `translate(-${rightPanePosition / 2}px, -50%)`,
