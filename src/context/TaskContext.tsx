@@ -402,20 +402,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     console.log("All tasks before filtering:", tasks);
     
     return tasks.filter((task) => {
-      const completionMatch = task.completed === completed;
-      const priorityMatch = priorityFilter === "all" || task.priority === priorityFilter;
-      const tagMatch = tagFilter === "all" || task.tag === tagFilter;
-      const basicMatch = completionMatch && priorityMatch && tagMatch;
-      
-      console.log("Task filtering debug:", {
-        taskId: task.id,
-        taskTitle: task.title,
-        taskCompleted: task.completed,
-        completionMatch,
-        priorityMatch,
-        tagMatch,
-        basicMatch
-      });
       // Filter by completion status
       const completionMatch = task.completed === completed;
       
@@ -427,6 +413,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       
       // Basic match without date filter
       const basicMatch = completionMatch && priorityMatch && tagMatch;
+      
+      console.log("Task filtering debug:", {
+        taskId: task.id,
+        taskTitle: task.title,
+        taskCompleted: task.completed,
+        completionMatch,
+        priorityMatch,
+        tagMatch,
+        basicMatch
+      });
       
       // If no date filter, return basic match
       if (dateFilter === "all") {
