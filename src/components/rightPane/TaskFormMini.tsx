@@ -60,7 +60,7 @@ const TaskFormMini = () => {
   };
 
   return (
-    <ScrollArea className="h-[500px] w-[350px] rounded-md border p-2">
+    <ScrollArea className="h-[500px] w-[300px] rounded-md border p-2">
       <div className="px-2">
         <div className="flex items-center justify-between mb-2 border-b pb-2">
           <div className="flex items-center gap-1">
@@ -169,7 +169,7 @@ const TaskFormMini = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             <div>
               <Label className="text-xs" htmlFor="scheduleFrom">From</Label>
               <Input
@@ -178,7 +178,7 @@ const TaskFormMini = () => {
                 type="time"
                 value={formData.scheduleFrom}
                 onChange={handleInputChange}
-                className="h-7 text-xs"
+                className="h-7 text-xs w-full"
               />
             </div>
             <div>
@@ -189,7 +189,7 @@ const TaskFormMini = () => {
                 type="time"
                 value={formData.scheduleTo}
                 onChange={handleInputChange}
-                className="h-7 text-xs"
+                className="h-7 text-xs w-full"
               />
             </div>
           </div>
