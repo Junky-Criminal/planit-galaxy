@@ -418,9 +418,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         return basicMatch;
       }
       
-      // If there's a date filter but task has no deadline, exclude it
+      // If there's a date filter but task has no deadline, only apply basic match
       if (!task.deadline) {
-        return false;
+        return basicMatch;
       }
       
       // Parse deadline if it exists
