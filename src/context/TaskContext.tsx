@@ -398,19 +398,32 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     tagFilter: TagType | "all"
   ) => {
     const today = new Date();
+    console.log("Filtering with params:", { completed, dateFilter, priorityFilter, tagFilter });
     
     return tasks.filter((task) => {
       // Filter by completion status
-      if (task.completed !== completed) return false;
+      const completionMatch = task.completed === completed;
       
       // Filter by priority
-      if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+      const priorityMatch = priorityFilter === "all" || task.priority === priorityFilter;
       
       // Filter by tag
-      if (tagFilter !== "all" && task.tag !== tagFilter) return false;
+      const tagMatch = tagFilter === "all" || task.tag === tagFilter;
+      
+      // Basic match without date filter
+      const basicMatch = completionMatch && priorityMatch && tagMatch;
+      
+      // If no date filter, return basic match
+      if (dateFilter === "all") {
+        return basicMatch;
+      }
+      
+      // If there's a date filter but task has no deadline, exclude it
+      if (!task.deadline) {
+        return false;
+      }
       
       // Filter by date
-      if (dateFilter !== "all") {
         // Parse deadline if it exists
         const deadlineDate = task.deadline ? parseISO(task.deadline) : null;
         
