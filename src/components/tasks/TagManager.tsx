@@ -89,6 +89,12 @@ const TagManager = ({ selectedTag, onTagSelect }: TagManagerProps) => {
           <Command>
             <CommandInput placeholder="Search tag..." className="h-9" />
             <CommandEmpty>No tag found.</CommandEmpty>
+            <CommandInput
+              placeholder="Search or enter tag to remove..."
+              className="h-9"
+              value={newTag}
+              onValueChange={setNewTag}
+            />
             <CommandGroup>
               {availableTags.map((tag) => (
                 <CommandItem
