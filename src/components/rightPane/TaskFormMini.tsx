@@ -4,271 +4,204 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { PlusCircle, Link, Bell, Plus, X } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { TagType, PriorityType } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const TaskFormMini = () => {
-  const { addTask, availableTags, addCustomTag } = useTaskContext();
+  const { addTask, availableTags } = useTaskContext();
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    review: '',
-    priority: 'medium' as PriorityType,
+    title: "",
+    description: "",
+    review: "",
+    priority: "medium" as PriorityType,
     status: false,
-    tag: '' as TagType,
-    links: '',
-    timeRequired: '',
-    scheduledTimeFrom: '',
-    scheduledTimeTo: '',
-    scheduledDate: '',
+    tag: "" as TagType,
+    links: "",
+    timeRequired: "",
+    scheduledDate: "",
+    scheduleFrom: "",
+    scheduleTo: ""
   });
 
-  const [customTag, setCustomTag] = useState('');
-  const [showTagInput, setShowTagInput] = useState(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleTagSelect = (tag: TagType) => {
-    setFormData(prev => ({ ...prev, tag }));
-  };
-
-  const handleAddCustomTag = () => {
-    if (customTag.trim()) {
-      addCustomTag(customTag.trim() as TagType);
-      handleTagSelect(customTag.trim() as TagType);
-      setShowTagInput(false);
-      setCustomTag('');
-    }
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addTask(formData);
-    setFormData({
-      title: '',
-      description: '',
-      review: '',
-      priority: 'medium',
-      status: false,
-      tag: '' as TagType,
-      links: '',
-      timeRequired: '',
-      scheduledTimeFrom: '',
-      scheduledTimeTo: '',
-      scheduledDate: '',
-    });
+    try {
+      await addTask({
+        ...formData,
+        timeRequired: formData.timeRequired || "00:00"
+      });
+      setFormData({
+        title: "",
+        description: "",
+        review: "",
+        priority: "medium",
+        status: false,
+        tag: "",
+        links: "",
+        timeRequired: "",
+        scheduledDate: "",
+        scheduleFrom: "",
+        scheduleTo: ""
+      });
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
   };
 
   return (
-    <div className="p-2 h-full overflow-hidden">
-      <div className="flex items-center gap-2 mb-2 pb-2 border-b">
-        <PlusCircle className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold">Quick Add Task</h3>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-2 text-sm">
-        <div>
-          <Label htmlFor="title" className="text-xs">Title</Label>
-          <Input
-            id="title"
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            placeholder="Task title"
-            className="h-8 text-sm"
-          />
+    <ScrollArea className="h-full">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4 border-b pb-2">
+          <div className="flex items-center gap-2">
+            <PlusCircle className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Quick Add Task</h3>
+          </div>
+          <Button size="sm" onClick={handleSubmit} className="px-2">
+            <PlusCircle className="h-4 w-4" />
+          </Button>
         </div>
 
-        <div>
-          <Label htmlFor="description" className="text-xs">Description</Label>
-          <Input
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            placeholder="Task description"
-            className="h-8 text-sm"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="review" className="text-xs">Review</Label>
-          <Input
-            id="review"
-            name="review"
-            value={formData.review}
-            onChange={handleInputChange}
-            placeholder="Task review"
-            className="h-8 text-sm"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
+        <form className="space-y-3 text-sm">
           <div>
-            <Label htmlFor="priority" className="text-xs">Priority</Label>
-            <select
-              id="priority"
-              name="priority"
-              value={formData.priority}
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              name="title"
+              value={formData.title}
               onChange={handleInputChange}
-              className="w-full h-8 rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
+              className="h-8"
+            />
           </div>
 
           <div>
-            <Label htmlFor="status" className="text-xs">Status</Label>
-            <div className="flex items-center h-8">
-              <Switch
-                id="status"
-                checked={formData.status}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, status: checked }))}
-              />
-              <span className="ml-2 text-xs">{formData.status ? 'Complete' : 'Incomplete'}</span>
-            </div>
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="h-8"
+            />
           </div>
-        </div>
 
-        <div>
-          <Label htmlFor="tag" className="text-xs">Tag</Label>
-          <div className="space-y-1">
-            {!showTagInput ? (
-              <Select
-                value={formData.tag}
-                onValueChange={(value: string) => {
-                  if (value === "custom") {
-                    setShowTagInput(true);
-                  } else {
-                    handleTagSelect(value as TagType);
-                  }
-                }}
-              >
-                <SelectTrigger className="h-6 text-xs">
-                  <SelectValue placeholder="Select tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTags.map(tag => (
-                    <SelectItem key={tag} value={tag} className="text-xs">
-                      {tag}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom" className="text-xs">+ Add custom tag</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="flex gap-1">
-                <Input
-                  type="text"
-                  value={customTag}
-                  onChange={(e) => setCustomTag(e.target.value)}
-                  placeholder="Enter custom tag"
-                  className="h-6 text-xs"
-                />
-                <Button 
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  onClick={handleAddCustomTag}
-                  disabled={!customTag}
-                  className="h-6 w-6"
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  onClick={() => {
-                    setShowTagInput(false);
-                    setCustomTag("");
-                  }}
-                  className="h-6 w-6"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
+          <div>
+            <Label htmlFor="review">Review</Label>
+            <Input
+              id="review"
+              name="review"
+              value={formData.review}
+              onChange={handleInputChange}
+              className="h-8"
+            />
           </div>
-        </div>
 
-        <div>
-          <Label htmlFor="links" className="text-xs">Links and Resources</Label>
-          <div className="relative">
-            <Link className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <div>
+            <Label htmlFor="priority">Priority</Label>
+            <Select 
+              value={formData.priority} 
+              onValueChange={(value) => handleSelectChange("priority", value)}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="tag">Tag</Label>
+            <Select 
+              value={formData.tag} 
+              onValueChange={(value) => handleSelectChange("tag", value)}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Select tag" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTags.map((tag) => (
+                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="links">Links & Resources</Label>
             <Input
               id="links"
               name="links"
               value={formData.links}
               onChange={handleInputChange}
-              placeholder="Resources or URLs"
-              className="h-8 text-sm pl-7"
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="timeRequired" className="text-xs">Time Required (hrs)</Label>
-          <Input
-            id="timeRequired"
-            name="timeRequired"
-            type="number"
-            value={formData.timeRequired}
-            onChange={handleInputChange}
-            placeholder="e.g. 2"
-            className="h-8 text-sm"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="scheduledTimeFrom" className="text-xs">From Time</Label>
-            <Input
-              id="scheduledTimeFrom"
-              name="scheduledTimeFrom"
-              type="time"
-              value={formData.scheduledTimeFrom}
-              onChange={handleInputChange}
-              className="h-8 text-sm"
+              className="h-8"
             />
           </div>
 
           <div>
-            <Label htmlFor="scheduledTimeTo" className="text-xs">To Time</Label>
+            <Label htmlFor="timeRequired">Time Required (HH:MM)</Label>
             <Input
-              id="scheduledTimeTo"
-              name="scheduledTimeTo"
-              type="time"
-              value={formData.scheduledTimeTo}
+              id="timeRequired"
+              name="timeRequired"
+              value={formData.timeRequired}
               onChange={handleInputChange}
-              className="h-8 text-sm"
+              placeholder="00:00"
+              pattern="[0-9]{2}:[0-9]{2}"
+              className="h-8"
             />
           </div>
-        </div>
 
-        <div>
-          <Label htmlFor="scheduledDate" className="text-xs">Scheduled Date</Label>
-          <Input
-            id="scheduledDate"
-            type="date"
-            name="scheduledDate"
-            value={formData.scheduledDate}
-            onChange={handleInputChange}
-            className="h-8 text-sm"
-          />
-        </div>
+          <div>
+            <Label htmlFor="scheduledDate">Scheduled Date</Label>
+            <Input
+              id="scheduledDate"
+              name="scheduledDate"
+              type="date"
+              value={formData.scheduledDate}
+              onChange={handleInputChange}
+              className="h-8"
+            />
+          </div>
 
-        <Button type="submit" className="w-full">
-          Add Task
-        </Button>
-      </form>
-    </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="scheduleFrom">From</Label>
+              <Input
+                id="scheduleFrom"
+                name="scheduleFrom"
+                type="time"
+                value={formData.scheduleFrom}
+                onChange={handleInputChange}
+                className="h-8"
+              />
+            </div>
+            <div>
+              <Label htmlFor="scheduleTo">To</Label>
+              <Input
+                id="scheduleTo"
+                name="scheduleTo"
+                type="time"
+                value={formData.scheduleTo}
+                onChange={handleInputChange}
+                className="h-8"
+              />
+            </div>
+          </div>
+        </form>
+      </div>
+    </ScrollArea>
   );
 };
 
