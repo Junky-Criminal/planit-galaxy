@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTaskContext } from '@/context/TaskContext';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PlusCircle } from 'lucide-react';
 import { TagType, PriorityType } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const TaskFormMini = () => {
   const { addTask, availableTags } = useTaskContext();
@@ -159,14 +163,25 @@ const TaskFormMini = () => {
 
           <div>
             <Label className="text-xs" htmlFor="scheduledDate">Scheduled Date</Label>
-            <Input
-              id="scheduledDate"
-              name="scheduledDate"
-              type="date"
-              value={formData.scheduledDate}
-              onChange={handleInputChange}
-              className="h-7 text-xs"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Input
+                  id="scheduledDate"
+                  name="scheduledDate"
+                  type="text"
+                  value={formData.scheduledDate ? format(new Date(formData.scheduledDate), 'yyyy-MM-dd') : ''}
+                  onChange={handleInputChange}
+                  className="h-7 text-xs"
+                  readOnly
+                />
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar
+                  date={formData.scheduledDate ? new Date(formData.scheduledDate) : new Date()}
+                  onDateChange={(date) => setFormData(prev => ({...prev, scheduledDate: date.toISOString().slice(0, 10)}))}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
