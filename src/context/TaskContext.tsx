@@ -423,31 +423,28 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
-      // Filter by date
-        // Parse deadline if it exists
-        const deadlineDate = task.deadline ? parseISO(task.deadline) : null;
-        
-        switch (dateFilter) {
-          case "next_day":
-            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 1));
-          case "next_week":
-            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 7));
-          case "next_month":
-            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 30));
-          case "next_six_months":
-            return deadlineDate && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 180));
-          case "past_week":
-            return deadlineDate && isBefore(deadlineDate, today) && isAfter(deadlineDate, addDays(today, -7));
-          case "past_month":
-            return deadlineDate && isBefore(deadlineDate, today) && isAfter(deadlineDate, addDays(today, -30));
-          case "all_past":
-            return deadlineDate && isBefore(deadlineDate, today);
-          default:
-            return true;
-        }
-      }
+      // Parse deadline if it exists
+      const deadlineDate = parseISO(task.deadline);
       
-      return task;
+      // Filter by date
+      switch (dateFilter) {
+        case "next_day":
+          return basicMatch && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 1));
+        case "next_week":
+          return basicMatch && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 7));
+        case "next_month":
+          return basicMatch && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 30));
+        case "next_six_months":
+          return basicMatch && isAfter(deadlineDate, today) && isBefore(deadlineDate, addDays(today, 180));
+        case "past_week":
+          return basicMatch && isBefore(deadlineDate, today) && isAfter(deadlineDate, addDays(today, -7));
+        case "past_month":
+          return basicMatch && isBefore(deadlineDate, today) && isAfter(deadlineDate, addDays(today, -30));
+        case "all_past":
+          return basicMatch && isBefore(deadlineDate, today);
+        default:
+          return basicMatch;
+      }
     });
   };
 
