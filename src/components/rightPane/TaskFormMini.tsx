@@ -1,113 +1,67 @@
-import React, { useState } from "react";
-import { useTaskContext, TagType, PriorityType } from "@/context/TaskContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { PlusCircle, X, Plus, Bell, Link } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React, { useState } from 'react';
+import { useTaskContext } from '@/context/TaskContext';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { PlusCircle, Link, Bell, Plus, X } from 'lucide-react';
+import { TagType, PriorityType } from '@/types';
 
 const TaskFormMini = () => {
-  const { addTask, availableTags, session } = useTaskContext();
+  const { addTask, availableTags, addCustomTag } = useTaskContext();
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    priority: "medium" as PriorityType,
-    tag: "work" as TagType,
-    timeSlot: "",
-    duration: "",
-    links: "",
-    deadline: "",
-    scheduledDate: "",
-    notificationsEnabled: false,
-    emailNotification: session?.user?.email || "",
-    notificationTime: "09:00"
+    title: '',
+    description: '',
+    review: '',
+    priority: 'medium' as PriorityType,
+    status: false,
+    tag: '' as TagType,
+    links: '',
+    timeRequired: '',
+    scheduledTimeFrom: '',
+    scheduledTimeTo: '',
+    scheduledDate: '',
   });
-  
-  const [customTag, setCustomTag] = useState("");
+
+  const [customTag, setCustomTag] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCheckboxChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleTagSelect = (tag: TagType) => {
-    setFormData(prev => ({
-      ...prev,
-      tag
-    }));
+    setFormData(prev => ({ ...prev, tag }));
   };
-  
+
   const handleAddCustomTag = () => {
-    if (!customTag.trim()) {
-      return;
+    if (customTag.trim()) {
+      addCustomTag(customTag.trim() as TagType);
+      handleTagSelect(customTag.trim() as TagType);
+      setShowTagInput(false);
+      setCustomTag('');
     }
-    
-    const normalizedTag = customTag.toLowerCase().trim() as TagType;
-    
-    setFormData(prev => ({
-      ...prev,
-      tag: normalizedTag
-    }));
-    
-    setCustomTag("");
-    setShowTagInput(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!session) {
-      toast.error("Please log in to add tasks");
-      return;
-    }
-    
-    if (!formData.title.trim()) {
-      toast.error("Please enter a task title");
-      return;
-    }
-    
     await addTask(formData);
-    
-    toast.success("Task added successfully!");
-    
-    // Reset form
     setFormData({
-      title: "",
-      description: "",
-      priority: "medium",
-      tag: "work",
-      timeSlot: "",
-      duration: "",
-      links: "",
-      deadline: "",
-      scheduledDate: "",
-      notificationsEnabled: false,
-      emailNotification: session?.user?.email || "",
-      notificationTime: "09:00"
+      title: '',
+      description: '',
+      review: '',
+      priority: 'medium',
+      status: false,
+      tag: '' as TagType,
+      links: '',
+      timeRequired: '',
+      scheduledTimeFrom: '',
+      scheduledTimeTo: '',
+      scheduledDate: '',
     });
   };
-
-  if (!session) {
-    return (
-      <div className="p-4 h-full flex items-center justify-center">
-        <p className="text-sm text-muted-foreground">Please sign in to add tasks</p>
-      </div>
-    );
-  }
 
   return (
     <div className="p-2 h-full overflow-hidden">
@@ -115,12 +69,12 @@ const TaskFormMini = () => {
         <PlusCircle className="h-5 w-5 text-primary" />
         <h3 className="text-lg font-semibold">Quick Add Task</h3>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="space-y-2 text-sm">
         <div>
-          <Label htmlFor="mini-title" className="text-xs">Title</Label>
+          <Label htmlFor="title" className="text-xs">Title</Label>
           <Input
-            id="mini-title"
+            id="title"
             name="title"
             value={formData.title}
             onChange={handleInputChange}
@@ -128,12 +82,36 @@ const TaskFormMini = () => {
             className="h-8 text-sm"
           />
         </div>
-        
+
+        <div>
+          <Label htmlFor="description" className="text-xs">Description</Label>
+          <Input
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            placeholder="Task description"
+            className="h-8 text-sm"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="review" className="text-xs">Review</Label>
+          <Input
+            id="review"
+            name="review"
+            value={formData.review}
+            onChange={handleInputChange}
+            placeholder="Task review"
+            className="h-8 text-sm"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="mini-priority" className="text-xs">Priority</Label>
+            <Label htmlFor="priority" className="text-xs">Priority</Label>
             <select
-              id="mini-priority"
+              id="priority"
               name="priority"
               value={formData.priority}
               onChange={handleInputChange}
@@ -144,22 +122,22 @@ const TaskFormMini = () => {
               <option value="high">High</option>
             </select>
           </div>
-          
+
           <div>
-            <Label htmlFor="mini-scheduledDate" className="text-xs">Scheduled Date</Label>
-            <Input
-              id="mini-scheduledDate"
-              type="date"
-              name="scheduledDate"
-              value={formData.scheduledDate}
-              onChange={handleInputChange}
-              className="h-8 text-sm"
-            />
+            <Label htmlFor="status" className="text-xs">Status</Label>
+            <div className="flex items-center h-8">
+              <Switch
+                id="status"
+                checked={formData.status}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, status: checked }))}
+              />
+              <span className="ml-2 text-xs">{formData.status ? 'Complete' : 'Incomplete'}</span>
+            </div>
           </div>
         </div>
-        
+
         <div>
-          <Label htmlFor="mini-tag" className="text-xs">Tag</Label>
+          <Label htmlFor="tag" className="text-xs">Tag</Label>
           <div className="space-y-1">
             {!showTagInput ? (
               <Select
@@ -167,7 +145,7 @@ const TaskFormMini = () => {
                 onValueChange={(value: string) => {
                   if (value === "custom") {
                     setShowTagInput(true);
-                  } else if (value) {
+                  } else {
                     handleTagSelect(value as TagType);
                   }
                 }}
@@ -186,27 +164,27 @@ const TaskFormMini = () => {
               </Select>
             ) : (
               <div className="flex gap-1">
-                <input
+                <Input
                   type="text"
                   value={customTag}
                   onChange={(e) => setCustomTag(e.target.value)}
                   placeholder="Enter custom tag"
-                  className="flex-1 h-6 rounded-md border border-input bg-background px-2 py-0.5 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="h-6 text-xs"
                 />
                 <Button 
-                  type="button" 
-                  size="icon" 
-                  variant="outline" 
+                  type="button"
+                  size="icon"
+                  variant="outline"
                   onClick={handleAddCustomTag}
                   disabled={!customTag}
                   className="h-6 w-6"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
-                <Button 
-                  type="button" 
-                  size="icon" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
                   onClick={() => {
                     setShowTagInput(false);
                     setCustomTag("");
@@ -219,13 +197,13 @@ const TaskFormMini = () => {
             )}
           </div>
         </div>
-        
+
         <div>
-          <Label htmlFor="mini-links" className="text-xs">Links and Resources</Label>
+          <Label htmlFor="links" className="text-xs">Links and Resources</Label>
           <div className="relative">
             <Link className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
-              id="mini-links"
+              id="links"
               name="links"
               value={formData.links}
               onChange={handleInputChange}
@@ -234,79 +212,61 @@ const TaskFormMini = () => {
             />
           </div>
         </div>
-        
+
+        <div>
+          <Label htmlFor="timeRequired" className="text-xs">Time Required (hrs)</Label>
+          <Input
+            id="timeRequired"
+            name="timeRequired"
+            type="number"
+            value={formData.timeRequired}
+            onChange={handleInputChange}
+            placeholder="e.g. 2"
+            className="h-8 text-sm"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="mini-timeSlot" className="text-xs">Time Slot</Label>
+            <Label htmlFor="scheduledTimeFrom" className="text-xs">From Time</Label>
             <Input
-              id="mini-timeSlot"
-              name="timeSlot"
-              value={formData.timeSlot}
+              id="scheduledTimeFrom"
+              name="scheduledTimeFrom"
+              type="time"
+              value={formData.scheduledTimeFrom}
               onChange={handleInputChange}
-              placeholder="e.g. 14:00-15:30"
               className="h-8 text-sm"
             />
           </div>
-          
+
           <div>
-            <Label htmlFor="mini-deadline" className="text-xs">Deadline</Label>
+            <Label htmlFor="scheduledTimeTo" className="text-xs">To Time</Label>
             <Input
-              id="mini-deadline"
-              type="date"
-              name="deadline"
-              value={formData.deadline}
+              id="scheduledTimeTo"
+              name="scheduledTimeTo"
+              type="time"
+              value={formData.scheduledTimeTo}
               onChange={handleInputChange}
               className="h-8 text-sm"
             />
           </div>
         </div>
-        
-        <div className="pt-1 border-t">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <Bell className="h-3 w-3 text-muted-foreground" />
-              <Label className="text-xs">Notifications</Label>
-            </div>
-            <Switch
-              id="mini-notificationsEnabled"
-              checked={formData.notificationsEnabled}
-              onCheckedChange={(checked) => 
-                handleCheckboxChange("notificationsEnabled", checked)
-              }
-              className="scale-75"
-            />
-          </div>
-          
-          {formData.notificationsEnabled && (
-            <div className="grid grid-cols-2 gap-2 mt-2 animate-in slide-in-from-top duration-300">
-              <div>
-                <Label htmlFor="mini-emailNotification" className="text-xs">Email</Label>
-                <Input
-                  id="mini-emailNotification"
-                  type="email"
-                  name="emailNotification"
-                  value={formData.emailNotification}
-                  onChange={handleInputChange}
-                  className="h-8 text-sm"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="mini-notificationTime" className="text-xs">Time</Label>
-                <Input
-                  id="mini-notificationTime"
-                  type="time"
-                  name="notificationTime"
-                  value={formData.notificationTime}
-                  onChange={handleInputChange}
-                  className="h-8 text-sm"
-                />
-              </div>
-            </div>
-          )}
+
+        <div>
+          <Label htmlFor="scheduledDate" className="text-xs">Scheduled Date</Label>
+          <Input
+            id="scheduledDate"
+            type="date"
+            name="scheduledDate"
+            value={formData.scheduledDate}
+            onChange={handleInputChange}
+            className="h-8 text-sm"
+          />
         </div>
-        
-        <Button type="submit" className="w-full h-8 text-sm mt-2">Add Task</Button>
+
+        <Button type="submit" className="w-full">
+          Add Task
+        </Button>
       </form>
     </div>
   );
