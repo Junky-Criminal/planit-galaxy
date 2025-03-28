@@ -87,14 +87,13 @@ const TagManager = ({ selectedTag, onTagSelect }: TagManagerProps) => {
         </PopoverTrigger>
         <PopoverContent className="w-full p-0">
           <Command>
-            <CommandInput placeholder="Search tag..." className="h-9" />
-            <CommandEmpty>No tag found.</CommandEmpty>
-            <CommandInput
-              placeholder="Search or enter tag to remove..."
-              className="h-9"
+            <Input
+              placeholder="Type new tag..."
+              className="h-9 uppercase"
               value={newTag}
-              onValueChange={setNewTag}
+              onChange={(e) => setNewTag(e.target.value.toUpperCase())}
             />
+            <CommandEmpty>No tag found.</CommandEmpty>
             <CommandGroup>
               {availableTags.map((tag) => (
                 <CommandItem
