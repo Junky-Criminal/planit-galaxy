@@ -50,7 +50,7 @@ const TaskFormMini = () => {
         tag: formData.tag || "other",
         links: formData.links || "",
         time_slot: formData.scheduleFrom || null,
-        duration: formData.timeRequired || null,
+        time_required: formData.timeRequired || null,
         scheduled_date: formData.scheduledDate || null,
         notifications_enabled: false,
         email_notification: null,
