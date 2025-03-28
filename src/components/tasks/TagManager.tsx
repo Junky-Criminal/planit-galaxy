@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useTaskContext, TagType } from "@/context/TaskContext";
 import { Button } from "@/components/ui/button";
@@ -7,13 +6,19 @@ import { X, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import TagBadge from "./TagBadge";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 interface TagManagerProps {
   selectedTag: TagType;
@@ -22,9 +27,8 @@ interface TagManagerProps {
 
 const TagManager = ({ selectedTag, onTagSelect }: TagManagerProps) => {
   const { availableTags, addCustomTag, removeTag } = useTaskContext();
+  const [open, setOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
-  const [showTagManager, setShowTagManager] = useState(false);
-  const [showConfirmDelete, setShowConfirmDelete] = useState<TagType | null>(null);
 
   const handleAddTag = async () => {
     if (!newTag.trim()) {
@@ -46,11 +50,14 @@ const TagManager = ({ selectedTag, onTagSelect }: TagManagerProps) => {
   };
 
   const handleDeleteTag = async (tag: TagType) => {
+    if (tag === "other") {
+      toast.error("Cannot delete the default 'other' tag");
+      return;
+    }
+
     await removeTag(tag);
     toast.success(`Tag "${tag}" deleted`);
-    setShowConfirmDelete(null);
-    
-    // If the deleted tag was selected, switch to "other"
+
     if (selectedTag === tag) {
       onTagSelect("other");
     }
@@ -58,105 +65,76 @@ const TagManager = ({ selectedTag, onTagSelect }: TagManagerProps) => {
 
   return (
     <div className="w-full">
-      <div className="flex flex-wrap gap-2 mb-3">
-        {availableTags.map((tag) => (
-          <div
-            key={tag}
-            onClick={() => onTagSelect(tag)}
-            className={`cursor-pointer transition-all ${
-              selectedTag === tag ? "scale-110 ring-2 ring-primary" : ""
-            }`}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
           >
-            <TagBadge tag={tag} />
-          </div>
-        ))}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowTagManager(true)}
-          className="px-2 h-6"
-        >
-          <Plus className="h-3 w-3 mr-1" /> Manage
-        </Button>
-      </div>
-
-      <Dialog open={showTagManager} onOpenChange={setShowTagManager}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Manage Tags</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            {/* Add new tag */}
-            <div className="flex items-center gap-2">
-              <Input
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder="New tag name"
-                className="flex-1"
-              />
-              <Button onClick={handleAddTag} disabled={!newTag.trim()}>
-                <Plus className="h-4 w-4 mr-1" /> Add
-              </Button>
-            </div>
-            
-            {/* Tag list */}
-            <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-              <h3 className="text-sm font-medium mb-2">Available Tags</h3>
-              <div className="space-y-2">
-                {availableTags.map((tag) => (
-                  <div key={tag} className="flex items-center justify-between py-1">
+            {selectedTag
+              ? availableTags.find((tag) => tag === selectedTag)
+              : "Select tag..."}
+            <X
+              className="ml-2 h-4 w-4 shrink-0 opacity-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTagSelect("other");
+              }}
+            />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0">
+          <Command>
+            <CommandInput placeholder="Search tag..." className="h-9" />
+            <CommandEmpty>No tag found.</CommandEmpty>
+            <CommandGroup>
+              {availableTags.map((tag) => (
+                <CommandItem
+                  key={tag}
+                  value={tag}
+                  onSelect={() => {
+                    onTagSelect(tag);
+                    setOpen(false);
+                  }}
+                  className="flex justify-between"
+                >
+                  <div className="flex items-center">
                     <TagBadge tag={tag} />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowConfirmDelete(tag)}
-                      className="h-6 w-6 p-0"
-                      disabled={tag === "other"} // Cannot delete the "other" tag
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <Check
+                      className={cn(
+                        "ml-2 h-4 w-4",
+                        selectedTag === tag ? "opacity-100" : "opacity-0"
+                      )}
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTagManager(false)}>
-              Close
+                  {tag !== "other" && (
+                    <Trash2
+                      className="h-4 w-4 text-destructive cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTag(tag);
+                      }}
+                    />
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+          <div className="p-2 flex gap-2">
+            <Input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              placeholder="New tag name"
+              className="flex-1"
+            />
+            <Button size="sm" onClick={handleAddTag}>
+              <Plus className="h-4 w-4" />
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirm delete dialog */}
-      {showConfirmDelete && (
-        <Dialog open={!!showConfirmDelete} onOpenChange={() => setShowConfirmDelete(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Delete Tag</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p>
-                Are you sure you want to delete the tag "{showConfirmDelete}"?
-                Tasks with this tag will be moved to "other".
-              </p>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowConfirmDelete(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleDeleteTag(showConfirmDelete)}
-              >
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
