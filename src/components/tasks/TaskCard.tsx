@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
   const { updateTask } = useTaskContext();
   const [isEditingTask, setIsEditingTask] = useState(false);
   const tagCardColor = getTagCardColor(task.tag);
+  const priorityColor = getPriorityColor(task.priority);
 
   return (
     <div className={cn(
@@ -23,7 +25,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
     )}>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 w-full">
             <div>
               <input
                 type="checkbox"
@@ -33,12 +35,22 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
               />
             </div>
             <div className="space-y-2 w-full">
-              <h3 className={cn(
-                "font-medium line-clamp-2",
-                task.completed && "line-through text-muted-foreground"
-              )}>
-                {task.title}
-              </h3>
+              <div className="flex justify-between items-start">
+                <h3 className={cn(
+                  "font-medium line-clamp-2",
+                  task.completed && "line-through text-muted-foreground"
+                )}>
+                  {task.title}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setIsEditingTask(true)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </div>
 
               {task.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2">
@@ -53,53 +65,37 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
               )}
 
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="font-medium">Priority:</span> {task.priority}
+                <div className={cn("font-medium", priorityColor)}>
+                  Priority: {task.priority}
                 </div>
-                <div>
-                  <span className="font-medium">Status:</span> {task.status}
-                </div>
-                <div>
-                  <span className="font-medium">Tag:</span> {task.tag}
-                </div>
-                <div>
-                  <span className="font-medium">Time Required:</span> {task.timeRequired}hrs
-                </div>
+                <div>Status: {task.status}</div>
+                <div>Tag: {task.tag}</div>
+                {task.timeRequired && (
+                  <div>Time Required: {task.timeRequired}hrs</div>
+                )}
               </div>
 
-              {task.linksAndResources && (
+              {task.scheduleFrom && task.scheduleTo && (
                 <div className="text-sm">
-                  <span className="font-medium">Links & Resources:</span>
-                  <p className="text-blue-500">{task.linksAndResources}</p>
+                  Schedule: {task.scheduleFrom} - {task.scheduleTo}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="font-medium">Schedule:</span>
-                  <p>{task.scheduleFrom} - {task.scheduleTo}</p>
+              {task.scheduledDate && (
+                <div className="text-sm">
+                  Date: {task.scheduledDate}
                 </div>
-                <div>
-                  <span className="font-medium">Date:</span> {task.scheduledDate}
+              )}
+
+              {task.links && (
+                <div className="text-sm">
+                  <span className="font-medium">Resources:</span>
+                  <a href={task.links} className="text-blue-500 ml-1 hover:underline" target="_blank" rel="noopener noreferrer">
+                    {task.links}
+                  </a>
                 </div>
-              </div>
+              )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className={cn(
-              "h-3 w-3 rounded-full",
-              getPriorityColor(task.priority)
-            )} />
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setIsEditingTask(true)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </div>
