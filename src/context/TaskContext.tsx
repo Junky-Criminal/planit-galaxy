@@ -447,7 +447,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      return true;
+      return task;
     });
   };
 
