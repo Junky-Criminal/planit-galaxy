@@ -66,17 +66,13 @@ const TabNavigation = ({
     { value: "low", label: "Low Priority" },
   ];
 
-  const tagOptions: Array<{ value: TagType | "all"; label: string }> = [
-    { value: "all", label: "All Tags" },
-    { value: "work", label: "Work" },
-    { value: "personal", label: "Personal" },
-    { value: "health", label: "Health" },
-    { value: "finance", label: "Finance" },
-    { value: "education", label: "Education" },
-    { value: "social", label: "Social" },
-    { value: "home", label: "Home" },
-    { value: "other", label: "Other" },
-  ];
+  const { tasks } = useTaskContext();
+  const uniqueTags = ["all", ...new Set(tasks.map(task => task.tag))] as (TagType | "all")[];
+  
+  const tagOptions: Array<{ value: TagType | "all"; label: string }> = uniqueTags.map(tag => ({
+    value: tag,
+    label: tag === "all" ? "All Tags" : tag.charAt(0).toUpperCase() + tag.slice(1)
+  }));
 
   const handleDateFilterChange = (value: string) => {
     setFilters(prev => ({ ...prev, dateFilter: value }));
