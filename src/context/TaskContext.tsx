@@ -133,7 +133,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           id: task.id,
           title: task.title,
           description: task.description || undefined,
-          completed: task.completed,
+          completed: task.completed || false,
           priority: task.priority as PriorityType,
           tag: (task.tags && task.tags.length > 0 && task.tags[0]) ? task.tags[0] : "other", // Handle null tags
           review: task.review,
@@ -399,8 +399,23 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   ) => {
     const today = new Date();
     console.log("Filtering with params:", { completed, dateFilter, priorityFilter, tagFilter });
+    console.log("All tasks before filtering:", tasks);
     
     return tasks.filter((task) => {
+      const completionMatch = task.completed === completed;
+      const priorityMatch = priorityFilter === "all" || task.priority === priorityFilter;
+      const tagMatch = tagFilter === "all" || task.tag === tagFilter;
+      const basicMatch = completionMatch && priorityMatch && tagMatch;
+      
+      console.log("Task filtering debug:", {
+        taskId: task.id,
+        taskTitle: task.title,
+        taskCompleted: task.completed,
+        completionMatch,
+        priorityMatch,
+        tagMatch,
+        basicMatch
+      });
       // Filter by completion status
       const completionMatch = task.completed === completed;
       
