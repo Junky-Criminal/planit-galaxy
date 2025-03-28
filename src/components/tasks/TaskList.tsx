@@ -20,8 +20,10 @@ const TaskList = ({
   priorityFilter, 
   tagFilter 
 }: TaskListProps) => {
-  const { getFilteredTasks, toggleTaskCompletion } = useTaskContext();
+  const { getFilteredTasks, toggleTaskCompletion, tasks: allTasks } = useTaskContext();
+  console.log("All tasks in context:", allTasks);
   const tasks = getFilteredTasks(completed, dateFilter, priorityFilter, tagFilter);
+  console.log("Filtered tasks:", tasks, { completed, dateFilter, priorityFilter, tagFilter });
   const [rightPaneOpen, setRightPaneOpen] = useState(true);
 
   // Listen for the custom event from RightPane
