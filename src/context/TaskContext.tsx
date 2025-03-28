@@ -13,14 +13,15 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
+  review?: string;
   completed: boolean;
   priority: PriorityType;
-  tag: TagType; // Changed from tags array to single tag
-  timeSlot?: string;
-  duration?: string;
-  expectedHours?: string;
+  status: 'pending' | 'in-progress' | 'completed' | 'blocked';
+  tag: TagType;
   links?: string;
-  deadline?: string;
+  timeRequired?: number;
+  scheduleFrom?: string;
+  scheduleTo?: string;
   scheduledDate?: string;
   createdAt: Date;
   notificationsEnabled?: boolean;
@@ -135,11 +136,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           completed: task.completed,
           priority: task.priority as PriorityType,
           tag: (task.tags && task.tags.length > 0 && task.tags[0]) ? task.tags[0] : "other", // Handle null tags
-          timeSlot: task.time_slot,
-          duration: task.duration,
-          expectedHours: task.expected_hours,
+          review: task.review,
+          status: task.status,
           links: task.links,
-          deadline: task.deadline,
+          timeRequired: task.time_required,
+          scheduleFrom: task.schedule_from,
+          scheduleTo: task.schedule_to,
+          scheduledDate: task.scheduled_date,
           scheduledDate: task.scheduled_date,
           createdAt: new Date(task.created_at),
           notificationsEnabled: task.notifications_enabled,
