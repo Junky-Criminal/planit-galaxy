@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: [
+      "9f0cedca-d958-4cb1-b1f2-2f7f9e8ca163-00-bzqd89nqruuq.pike.replit.dev",
+      ".repl.co",
+      ".replit.dev"
+    ],
   },
   plugins: [
     react(),
