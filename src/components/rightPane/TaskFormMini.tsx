@@ -43,23 +43,20 @@ const TaskFormMini = () => {
     try {
       await addTask({
         ...formData,
-        timeRequired: formData.timeRequired || "00:00"
+        completed: false,
+        createdAt: new Date().toISOString(),
       });
+
+      // Reset form after successful submission
       setFormData({
         title: "",
         description: "",
-        review: "",
         priority: "medium",
-        status: false,
         tag: "",
-        links: "",
-        timeRequired: "",
         scheduledDate: "",
-        scheduleFrom: "",
-        scheduleTo: ""
       });
     } catch (error) {
-      console.error('Error adding task:', error);
+      console.error("Failed to add task:", error);
     }
   };
 
