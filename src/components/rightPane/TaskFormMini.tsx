@@ -7,6 +7,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PlusCircle } from 'lucide-react';
 import { TagType, PriorityType } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+// Placeholder components -  replace with actual implementations
+const TagManager = ({ selectedTag, onTagSelect }) => (
+  <Select value={selectedTag} onValueChange={onTagSelect}>
+    <SelectTrigger>
+      <SelectValue placeholder="Select tag" />
+    </SelectTrigger>
+    <SelectContent>
+      {/*  Replace with actual tag selection logic */}
+      <SelectItem value="tag1">Tag 1</SelectItem>
+      <SelectItem value="tag2">Tag 2</SelectItem>
+    </SelectContent>
+  </Select>
+);
+
+const DatePicker = ({ date, setDate }) => (
+  <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-8 text-sm" />
+);
+
 
 const TaskFormMini = () => {
   const { addTask, availableTags } = useTaskContext();
@@ -59,7 +77,7 @@ const TaskFormMini = () => {
   };
 
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="h-[500px] w-[350px] rounded-md border p-4 text-sm">
       <div className="p-4">
         <div className="flex items-center justify-between mb-4 border-b pb-2">
           <div className="flex items-center gap-2">
@@ -73,43 +91,44 @@ const TaskFormMini = () => {
 
         <form className="space-y-3 text-sm">
           <div>
-            <Label htmlFor="title">Title</Label>
+            <Label className="text-xs" htmlFor="title">Title</Label>
             <Input
               id="title"
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              className="h-8"
+              className="h-8 text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label className="text-xs" htmlFor="description">Description</Label>
             <Input
               id="description"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              className="h-8"
+              className="h-8 text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="review">Review</Label>
+            <Label className="text-xs" htmlFor="review">Review</Label>
             <Input
               id="review"
               name="review"
               value={formData.review}
               onChange={handleInputChange}
-              className="h-8"
+              className="h-8 text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="priority">Priority</Label>
-            <Select 
-              value={formData.priority} 
+            <Label className="text-xs" htmlFor="priority">Priority</Label>
+            <Select
+              value={formData.priority}
               onValueChange={(value) => handleSelectChange("priority", value)}
+              className="text-sm"
             >
               <SelectTrigger className="h-8">
                 <SelectValue placeholder="Select priority" />
@@ -123,35 +142,26 @@ const TaskFormMini = () => {
           </div>
 
           <div>
-            <Label htmlFor="tag">Tag</Label>
-            <Select 
-              value={formData.tag} 
-              onValueChange={(value) => handleSelectChange("tag", value)}
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Select tag" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTags.map((tag) => (
-                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs" htmlFor="tag">Tag</Label>
+            <TagManager
+              selectedTag={formData.tag}
+              onTagSelect={(tag) => setFormData({ ...formData, tag: tag as TagType })}
+            />
           </div>
 
           <div>
-            <Label htmlFor="links">Links & Resources</Label>
+            <Label className="text-xs" htmlFor="links">Links & Resources</Label>
             <Input
               id="links"
               name="links"
               value={formData.links}
               onChange={handleInputChange}
-              className="h-8"
+              className="h-8 text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="timeRequired">Time Required (HH:MM)</Label>
+            <Label className="text-xs" htmlFor="timeRequired">Time Required (HH:MM)</Label>
             <Input
               id="timeRequired"
               name="timeRequired"
@@ -159,43 +169,39 @@ const TaskFormMini = () => {
               onChange={handleInputChange}
               placeholder="00:00"
               pattern="[0-9]{2}:[0-9]{2}"
-              className="h-8"
+              className="h-8 text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="scheduledDate">Scheduled Date</Label>
-            <Input
-              id="scheduledDate"
-              name="scheduledDate"
-              type="date"
-              value={formData.scheduledDate}
-              onChange={handleInputChange}
-              className="h-8"
+            <Label className="text-xs" htmlFor="scheduledDate">Scheduled Date</Label>
+            <DatePicker
+              date={formData.scheduledDate}
+              setDate={(date) => setFormData({ ...formData, scheduledDate: date })}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label htmlFor="scheduleFrom">From</Label>
+              <Label className="text-xs" htmlFor="scheduleFrom">From</Label>
               <Input
                 id="scheduleFrom"
                 name="scheduleFrom"
                 type="time"
                 value={formData.scheduleFrom}
                 onChange={handleInputChange}
-                className="h-8"
+                className="h-8 text-sm"
               />
             </div>
             <div>
-              <Label htmlFor="scheduleTo">To</Label>
+              <Label className="text-xs" htmlFor="scheduleTo">To</Label>
               <Input
                 id="scheduleTo"
                 name="scheduleTo"
                 type="time"
                 value={formData.scheduleTo}
                 onChange={handleInputChange}
-                className="h-8"
+                className="h-8 text-sm"
               />
             </div>
           </div>
