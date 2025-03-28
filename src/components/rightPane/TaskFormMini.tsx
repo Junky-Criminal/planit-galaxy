@@ -51,9 +51,15 @@ const TaskFormMini = () => {
       setFormData({
         title: "",
         description: "",
+        review: "",
         priority: "medium",
+        status: false,
         tag: "",
+        links: "",
+        timeRequired: "",
         scheduledDate: "",
+        scheduleFrom: "",
+        scheduleTo: ""
       });
     } catch (error) {
       console.error("Failed to add task:", error);
