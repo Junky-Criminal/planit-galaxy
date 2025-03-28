@@ -169,7 +169,7 @@ const TaskFormMini = () => {
                   id="scheduledDate"
                   name="scheduledDate"
                   type="text"
-                  value={formData.scheduledDate ? format(new Date(formData.scheduledDate), 'yyyy-MM-dd') : ''}
+                  value={formData.scheduledDate ? format(new Date(formData.scheduledDate), 'dd/MM/yyyy') : ''}
                   onChange={handleInputChange}
                   className="h-7 text-xs"
                   readOnly
@@ -178,7 +178,7 @@ const TaskFormMini = () => {
               <PopoverContent>
                 <Calendar
                   date={formData.scheduledDate ? new Date(formData.scheduledDate) : new Date()}
-                  onDateChange={(date) => setFormData(prev => ({...prev, scheduledDate: date.toISOString().slice(0, 10)}))}
+                  onDateChange={(date) => setFormData(prev => ({...prev, scheduledDate: format(date, 'dd/MM/yyyy')}))}
                 />
               </PopoverContent>
             </Popover>
