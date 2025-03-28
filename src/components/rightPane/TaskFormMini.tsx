@@ -126,16 +126,14 @@ const TaskFormMini = () => {
 
           <div>
             <Label className="text-xs" htmlFor="tag">Tag</Label>
-            <Select value={formData.tag} onValueChange={(value) => handleSelectChange("tag", value)}>
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="Select tag" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTags?.map((tag) => (
-                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              id="tag"
+              name="tag"
+              value={formData.tag}
+              onChange={(e) => setFormData(prev => ({ ...prev, tag: e.target.value.toUpperCase() }))}
+              className="h-7 text-xs uppercase"
+              placeholder="Enter tag"
+            />
           </div>
 
           <div>
