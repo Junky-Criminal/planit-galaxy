@@ -28,6 +28,7 @@ export type Database = {
           time_slot: string | null
           title: string
           user_id: string
+          status: boolean
         }
         Insert: {
           completed?: boolean
@@ -47,6 +48,7 @@ export type Database = {
           time_slot?: string | null
           title: string
           user_id: string
+          status?: boolean
         }
         Update: {
           completed?: boolean
@@ -66,6 +68,7 @@ export type Database = {
           time_slot?: string | null
           title?: string
           user_id?: string
+          status?: boolean
         }
         Relationships: []
       }

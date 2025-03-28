@@ -16,7 +16,7 @@ export interface Task {
   review?: string;
   completed: boolean;
   priority: PriorityType;
-  status: 'pending' | 'in-progress' | 'completed' | 'blocked';
+  status: boolean;
   tag: TagType;
   links?: string;
   timeRequired?: number;
