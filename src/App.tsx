@@ -11,12 +11,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useTaskContext();
+  const [shouldNavigate, setShouldNavigate] = useState(false);
+  
+  useEffect(() => {
+    if (!isLoading && !session) {
+      setShouldNavigate(true);
+    }
+  }, [isLoading, session]);
   
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
   
-  if (!session) {
+  if (shouldNavigate) {
     return <Navigate to="/auth" replace />;
   }
   
