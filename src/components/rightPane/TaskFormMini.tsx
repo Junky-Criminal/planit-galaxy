@@ -178,7 +178,7 @@ const TaskFormMini = () => {
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={formData.scheduledDate ? new Date(formData.scheduledDate) : undefined}
+                  selected={formData.scheduledDate ? new Date(formData.scheduledDate.split('/').reverse().join('-')) : undefined}
                   onSelect={(date) => date && setFormData(prev => ({...prev, scheduledDate: format(date, 'dd/MM/yyyy')}))}
                   initialFocus
                 />
