@@ -43,17 +43,17 @@ const TaskFormMini = () => {
     try {
       await addTask({
         ...formData,
-        completed: false,
+        title: formData.title,
+        description: formData.description || "",
         priority: formData.priority || "medium",
+        status: false,
         tag: formData.tag || "other",
-        createdAt: new Date(),
-        timeSlot: formData.scheduleFrom,
-        duration: formData.timeRequired,
-        deadline: formData.scheduleTo,
-        scheduledDate: formData.scheduledDate,
-        notificationsEnabled: false,
-        emailNotification: false,
         links: formData.links || "",
+        time_slot: formData.scheduleFrom || null,
+        duration: formData.timeRequired || null,
+        scheduled_date: formData.scheduledDate || null,
+        notifications_enabled: false,
+        email_notification: null,
       });
 
       // Reset form after successful submission
