@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Filter } from "lucide-react";
@@ -20,6 +19,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { TagType, PriorityType, tagColors } from "@/context/TaskContext";
+import { useTaskContext } from "@/context/TaskContext"; // Added import
 
 interface TabNavigationProps {
   activeTab: string;
@@ -68,7 +68,7 @@ const TabNavigation = ({
 
   const { tasks } = useTaskContext();
   const uniqueTags = ["all", ...new Set(tasks.map(task => task.tag))] as (TagType | "all")[];
-  
+
   const tagOptions: Array<{ value: TagType | "all"; label: string }> = uniqueTags.map(tag => ({
     value: tag,
     label: tag === "all" ? "All Tags" : tag.charAt(0).toUpperCase() + tag.slice(1)
@@ -120,7 +120,7 @@ const TabNavigation = ({
           <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            
+
             <DropdownMenuGroup>
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground pt-2">
                 By Date
@@ -138,9 +138,9 @@ const TabNavigation = ({
                 </SelectContent>
               </Select>
             </DropdownMenuGroup>
-            
+
             <DropdownMenuSeparator />
-            
+
             <DropdownMenuGroup>
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground pt-2">
                 By Priority
@@ -158,9 +158,9 @@ const TabNavigation = ({
                 </SelectContent>
               </Select>
             </DropdownMenuGroup>
-            
+
             <DropdownMenuSeparator />
-            
+
             <DropdownMenuGroup>
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground pt-2">
                 By Tag
