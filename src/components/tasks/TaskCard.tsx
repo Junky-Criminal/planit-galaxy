@@ -21,7 +21,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
     <div className={cn(
       "rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-300",
       tagCardColor,
-      task.completed && "opacity-70"
+      task.Status && "opacity-70"
     )}>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between">
@@ -29,7 +29,7 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
             <div>
               <input
                 type="checkbox"
-                checked={task.completed}
+                checked={task.Status}
                 onChange={() => onToggleCompletion(task.id)}
                 className="h-5 w-5 rounded border-gray-300"
               />
@@ -68,7 +68,6 @@ const TaskCard = ({ task, onToggleCompletion }: TaskCardProps) => {
                 <div className={cn("font-medium", priorityColor)}>
                   Priority: {task.priority}
                 </div>
-                <div>Status: {task.status}</div>
                 <div>Tag: {task.tag}</div>
                 {task.timeRequired && (
                   <div>Time Required: {task.timeRequired}hrs</div>
